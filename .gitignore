@@ -9,3 +9,4 @@ dist/
 infra/.terraform/
 infra/*.tfstate*
 infra/placeholder.zip
+.envrc
