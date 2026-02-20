@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime, timezone
 from email import message_from_bytes
+from email.header import decode_header
 from email.message import Message
 
 from spend_tracking.shared.domain.models import Email
@@ -29,7 +30,7 @@ class ProcessEmail:
         raw = self._storage.get_email_raw(s3_key)
         msg = message_from_bytes(raw)
 
-        subject = msg.get("Subject")
+        subject = self._decode_header(msg.get("Subject"))
         body_text = self._extract_body(msg, "text/plain")
         body_html = self._extract_body(msg, "text/html")
 
@@ -47,6 +48,19 @@ class ProcessEmail:
         )
         self._repository.save_email(email)
         logger.info("Saved email %s for %s", email.id, address)
+
+    @staticmethod
+    def _decode_header(value: str | None) -> str | None:
+        if value is None:
+            return None
+        parts = decode_header(value)
+        decoded = []
+        for data, charset in parts:
+            if isinstance(data, bytes):
+                decoded.append(data.decode(charset or "utf-8", errors="replace"))
+            else:
+                decoded.append(data)
+        return "".join(decoded)
 
     @staticmethod
     def _extract_body(msg: Message, content_type: str) -> str | None:

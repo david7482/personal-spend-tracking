@@ -111,3 +111,24 @@ def test_email_has_correct_metadata():
     assert saved.address == "card-xyz@mail.david74.dev"
     assert saved.id is None
     assert saved.created_at is not None
+
+
+def test_decodes_mime_encoded_subject():
+    from spend_tracking.worker.services.process_email import ProcessEmail
+
+    storage = MagicMock()
+    repository = MagicMock()
+
+    encoded_subject = "=?UTF-8?B?5ris6Kmm5Li76aGM?="
+    storage.get_email_raw.return_value = _make_plain_email(subject=encoded_subject)
+
+    service = ProcessEmail(storage, repository)
+    service.execute(
+        s3_key="key-4",
+        address="bank-abc@mail.david74.dev",
+        sender="sender@example.com",
+        received_at="2026-02-21T10:00:00+00:00",
+    )
+
+    saved = repository.save_email.call_args[0][0]
+    assert saved.subject == "\u6e2c\u8a66\u4e3b\u984c"
