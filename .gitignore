@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.build/
+*.egg-info/
+dist/
+.idea/
+.venv/
+*.zip
+infra/.terraform/
+infra/*.tfstate*
+infra/placeholder.zip
