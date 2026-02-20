@@ -43,7 +43,8 @@ class DbEmailRepository(EmailRepository):
                     "INSERT INTO emails "
                     "(address, sender, subject, body_html, body_text, "
                     "raw_s3_key, received_at, parsed_data, created_at) "
-                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) "
+                    "RETURNING id",
                     (
                         email.address,
                         email.sender,
@@ -56,4 +57,5 @@ class DbEmailRepository(EmailRepository):
                         email.created_at,
                     ),
                 )
+                email.id = cur.fetchone()[0]
             conn.commit()
