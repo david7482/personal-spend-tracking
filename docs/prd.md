@@ -90,7 +90,8 @@ def generate_email(prefix: str, domain: str) -> str:
 ```sql
 -- 已註冊的流水號地址
 CREATE TABLE registered_addresses (
-    address     TEXT PRIMARY KEY,       -- 完整 email 地址
+    id          BIGSERIAL PRIMARY KEY,
+    address     TEXT UNIQUE NOT NULL,   -- 完整 email 地址
     prefix      TEXT NOT NULL,          -- 前綴分類 (bank, card, etc.)
     label       TEXT,                   -- 人類可讀標籤，例如 "玉山信用卡帳單"
     is_active   BOOLEAN DEFAULT true,
@@ -99,7 +100,7 @@ CREATE TABLE registered_addresses (
 
 -- 收到的信件
 CREATE TABLE emails (
-    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id          BIGSERIAL PRIMARY KEY,
     address     TEXT NOT NULL REFERENCES registered_addresses(address),
     sender      TEXT NOT NULL,
     subject     TEXT,

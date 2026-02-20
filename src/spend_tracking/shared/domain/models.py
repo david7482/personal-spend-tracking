@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 from datetime import datetime
-from uuid import UUID
 
 
 @dataclass
 class RegisteredAddress:
+    id: int
     address: str
     prefix: str
     label: str | None
@@ -14,7 +14,7 @@ class RegisteredAddress:
 
 @dataclass
 class Email:
-    id: UUID
+    id: int | None
     address: str
     sender: str
     subject: str | None

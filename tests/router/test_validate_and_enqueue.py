@@ -23,6 +23,7 @@ def test_enqueues_for_active_registered_address():
     to_addr = "bank-abc123@mail.david74.dev"
     storage.get_email_headers.return_value = _make_raw_headers(to_addr)
     repository.get_registered_address.return_value = RegisteredAddress(
+        id=1,
         address=to_addr,
         prefix="bank",
         label="Test",
@@ -69,6 +70,7 @@ def test_skips_inactive_address():
     to_addr = "bank-abc123@mail.david74.dev"
     storage.get_email_headers.return_value = _make_raw_headers(to_addr)
     repository.get_registered_address.return_value = RegisteredAddress(
+        id=2,
         address=to_addr,
         prefix="bank",
         label="Test",
@@ -105,6 +107,7 @@ def test_checks_delivered_to_header():
     def lookup(addr):
         if addr == target_addr:
             return RegisteredAddress(
+                id=3,
                 address=target_addr,
                 prefix="bank",
                 label="Test",

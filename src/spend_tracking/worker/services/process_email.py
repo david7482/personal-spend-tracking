@@ -2,7 +2,6 @@ import logging
 from datetime import datetime, timezone
 from email import message_from_bytes
 from email.message import Message
-from uuid import uuid4
 
 from spend_tracking.shared.domain.models import Email
 from spend_tracking.shared.interfaces.email_repository import EmailRepository
@@ -35,7 +34,7 @@ class ProcessEmail:
         body_html = self._extract_body(msg, "text/html")
 
         email = Email(
-            id=uuid4(),
+            id=None,
             address=address,
             sender=sender,
             subject=subject,

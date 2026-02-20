@@ -20,7 +20,7 @@ class DbEmailRepository(EmailRepository):
         with psycopg2.connect(self._connection_string) as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT address, prefix, label, is_active, created_at "
+                    "SELECT id, address, prefix, label, is_active, created_at "
                     "FROM registered_addresses WHERE address = %s",
                     (address,),
                 )
@@ -28,11 +28,12 @@ class DbEmailRepository(EmailRepository):
                 if row is None:
                     return None
                 return RegisteredAddress(
-                    address=row[0],
-                    prefix=row[1],
-                    label=row[2],
-                    is_active=row[3],
-                    created_at=row[4],
+                    id=row[0],
+                    address=row[1],
+                    prefix=row[2],
+                    label=row[3],
+                    is_active=row[4],
+                    created_at=row[5],
                 )
 
     def save_email(self, email: Email) -> None:
@@ -40,11 +41,10 @@ class DbEmailRepository(EmailRepository):
             with conn.cursor() as cur:
                 cur.execute(
                     "INSERT INTO emails "
-                    "(id, address, sender, subject, body_html, body_text, "
+                    "(address, sender, subject, body_html, body_text, "
                     "raw_s3_key, received_at, parsed_data, created_at) "
-                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                     (
-                        str(email.id),
                         email.address,
                         email.sender,
                         email.subject,

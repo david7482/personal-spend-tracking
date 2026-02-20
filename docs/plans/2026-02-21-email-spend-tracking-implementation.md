@@ -106,19 +106,20 @@ git commit -m "scaffold: project structure with Poetry and package layout"
 ```python
 # tests/shared/test_models.py
 from datetime import datetime, timezone
-from uuid import uuid4
 
 
 def test_registered_address_creation():
     from spend_tracking.shared.domain.models import RegisteredAddress
 
     addr = RegisteredAddress(
+        id=1,
         address="bank-abc123@mail.david74.dev",
         prefix="bank",
         label="Test Bank",
         is_active=True,
         created_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
     )
+    assert addr.id == 1
     assert addr.address == "bank-abc123@mail.david74.dev"
     assert addr.prefix == "bank"
     assert addr.label == "Test Bank"
@@ -129,6 +130,7 @@ def test_registered_address_optional_label():
     from spend_tracking.shared.domain.models import RegisteredAddress
 
     addr = RegisteredAddress(
+        id=2,
         address="card-xyz@mail.david74.dev",
         prefix="card",
         label=None,
@@ -141,9 +143,8 @@ def test_registered_address_optional_label():
 def test_email_creation():
     from spend_tracking.shared.domain.models import Email
 
-    email_id = uuid4()
     email = Email(
-        id=email_id,
+        id=42,
         address="bank-abc123@mail.david74.dev",
         sender="noreply@bank.com",
         subject="Your statement",
@@ -154,7 +155,7 @@ def test_email_creation():
         parsed_data=None,
         created_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
     )
-    assert email.id == email_id
+    assert email.id == 42
     assert email.sender == "noreply@bank.com"
     assert email.parsed_data is None
 
@@ -164,7 +165,7 @@ def test_email_with_parsed_data():
 
     parsed = {"type": "credit_card_statement", "amount": 12345}
     email = Email(
-        id=uuid4(),
+        id=None,
         address="bank-abc123@mail.david74.dev",
         sender="noreply@bank.com",
         subject="Statement",
@@ -175,6 +176,7 @@ def test_email_with_parsed_data():
         parsed_data=parsed,
         created_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
     )
+    assert email.id is None
     assert email.parsed_data["amount"] == 12345
 ```
 
@@ -189,11 +191,11 @@ Expected: FAIL with `ModuleNotFoundError` or `ImportError`
 # src/spend_tracking/shared/domain/models.py
 from dataclasses import dataclass
 from datetime import datetime
-from uuid import UUID
 
 
 @dataclass
 class RegisteredAddress:
+    id: int
     address: str
     prefix: str
     label: str | None
@@ -203,7 +205,7 @@ class RegisteredAddress:
 
 @dataclass
 class Email:
-    id: UUID
+    id: int | None
     address: str
     sender: str
     subject: str | None
@@ -336,6 +338,7 @@ def test_enqueues_for_active_registered_address():
     to_addr = "bank-abc123@mail.david74.dev"
     storage.get_email_headers.return_value = _make_raw_headers(to_addr)
     repository.get_registered_address.return_value = RegisteredAddress(
+        id=1,
         address=to_addr,
         prefix="bank",
         label="Test",
@@ -382,6 +385,7 @@ def test_skips_inactive_address():
     to_addr = "bank-abc123@mail.david74.dev"
     storage.get_email_headers.return_value = _make_raw_headers(to_addr)
     repository.get_registered_address.return_value = RegisteredAddress(
+        id=2,
         address=to_addr,
         prefix="bank",
         label="Test",
@@ -418,6 +422,7 @@ def test_checks_delivered_to_header():
     def lookup(addr):
         if addr == target_addr:
             return RegisteredAddress(
+                id=3,
                 address=target_addr,
                 prefix="bank",
                 label="Test",
@@ -646,7 +651,7 @@ def test_email_has_correct_metadata():
     saved = repository.save_email.call_args[0][0]
     assert saved.sender == "bank@example.com"
     assert saved.address == "card-xyz@mail.david74.dev"
-    assert saved.id is not None
+    assert saved.id is None
     assert saved.created_at is not None
 ```
 
@@ -663,7 +668,6 @@ import logging
 from datetime import datetime, timezone
 from email import message_from_bytes
 from email.message import Message
-from uuid import uuid4
 
 from spend_tracking.shared.domain.models import Email
 from spend_tracking.shared.interfaces.email_repository import EmailRepository
@@ -696,7 +700,7 @@ class ProcessEmail:
         body_html = self._extract_body(msg, "text/html")
 
         email = Email(
-            id=uuid4(),
+            id=None,
             address=address,
             sender=sender,
             subject=subject,
@@ -832,7 +836,7 @@ class DbEmailRepository(EmailRepository):
         with psycopg2.connect(self._connection_string) as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT address, prefix, label, is_active, created_at "
+                    "SELECT id, address, prefix, label, is_active, created_at "
                     "FROM registered_addresses WHERE address = %s",
                     (address,),
                 )
@@ -840,11 +844,12 @@ class DbEmailRepository(EmailRepository):
                 if row is None:
                     return None
                 return RegisteredAddress(
-                    address=row[0],
-                    prefix=row[1],
-                    label=row[2],
-                    is_active=row[3],
-                    created_at=row[4],
+                    id=row[0],
+                    address=row[1],
+                    prefix=row[2],
+                    label=row[3],
+                    is_active=row[4],
+                    created_at=row[5],
                 )
 
     def save_email(self, email: Email) -> None:
@@ -852,11 +857,10 @@ class DbEmailRepository(EmailRepository):
             with conn.cursor() as cur:
                 cur.execute(
                     "INSERT INTO emails "
-                    "(id, address, sender, subject, body_html, body_text, "
+                    "(address, sender, subject, body_html, body_text, "
                     "raw_s3_key, received_at, parsed_data, created_at) "
-                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                     (
-                        str(email.id),
                         email.address,
                         email.sender,
                         email.subject,
@@ -1441,7 +1445,8 @@ Connect to Neon and run:
 
 ```sql
 CREATE TABLE registered_addresses (
-    address     TEXT PRIMARY KEY,
+    id          BIGSERIAL PRIMARY KEY,
+    address     TEXT UNIQUE NOT NULL,
     prefix      TEXT NOT NULL,
     label       TEXT,
     is_active   BOOLEAN DEFAULT true,
@@ -1449,7 +1454,7 @@ CREATE TABLE registered_addresses (
 );
 
 CREATE TABLE emails (
-    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id          BIGSERIAL PRIMARY KEY,
     address     TEXT NOT NULL REFERENCES registered_addresses(address),
     sender      TEXT NOT NULL,
     subject     TEXT,

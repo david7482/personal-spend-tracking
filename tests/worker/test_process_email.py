@@ -109,5 +109,5 @@ def test_email_has_correct_metadata():
     saved = repository.save_email.call_args[0][0]
     assert saved.sender == "bank@example.com"
     assert saved.address == "card-xyz@mail.david74.dev"
-    assert saved.id is not None
+    assert saved.id is None
     assert saved.created_at is not None
