@@ -24,9 +24,9 @@ Inbound email automation service for personal spend tracking. Receives bank/cred
 
 ```
 personal-spend-tracking/
-├── doc/
-│   └── prd.md
-├── docs/plans/
+├── docs/
+│   ├── prd.md
+│   └── plans/
 ├── infra/
 │   ├── backend.tf
 │   ├── provider.tf
