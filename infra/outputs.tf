@@ -16,5 +16,5 @@ output "raw_emails_bucket" {
 }
 
 output "sqs_queue_url" {
-  value = aws_sqs_queue.processing.url
+  value = aws_sqs_queue.email-processing.url
 }

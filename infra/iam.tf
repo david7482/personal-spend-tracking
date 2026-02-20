@@ -30,7 +30,7 @@ resource "aws_iam_role_policy" "router" {
       {
         Effect   = "Allow"
         Action   = ["sqs:SendMessage"]
-        Resource = aws_sqs_queue.processing.arn
+        Resource = aws_sqs_queue.email-processing.arn
       },
       {
         Effect   = "Allow"
@@ -100,7 +100,7 @@ resource "aws_iam_role_policy" "worker" {
           "sqs:DeleteMessage",
           "sqs:GetQueueAttributes"
         ]
-        Resource = aws_sqs_queue.processing.arn
+        Resource = aws_sqs_queue.email-processing.arn
       }
     ]
   })

@@ -20,7 +20,7 @@ resource "aws_lambda_function" "router" {
   environment {
     variables = {
       S3_BUCKET               = aws_s3_bucket.raw_emails.id
-      SQS_QUEUE_URL           = aws_sqs_queue.processing.url
+      SQS_QUEUE_URL           = aws_sqs_queue.email-processing.url
       SSM_DB_CONNECTION_STRING = aws_ssm_parameter.db_connection_string.name
     }
   }
@@ -60,7 +60,7 @@ resource "aws_lambda_function" "worker" {
 }
 
 resource "aws_lambda_event_source_mapping" "worker_sqs" {
-  event_source_arn = aws_sqs_queue.processing.arn
+  event_source_arn = aws_sqs_queue.email-processing.arn
   function_name    = aws_lambda_function.worker.arn
   batch_size       = 1
 }
