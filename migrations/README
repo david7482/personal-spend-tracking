@@ -1,0 +1,18 @@
+Database migrations for the spend-tracking service using Alembic.
+
+## Usage
+
+Run migrations:
+    DATABASE_URL="postgresql://..." make migrate
+
+Create a new migration:
+    make migrate-new name="description"
+
+Use --rev-id for sequential numbering:
+    poetry run alembic revision --rev-id 002 -m "description"
+
+## Notes
+
+- DATABASE_URL must be set as an environment variable
+- Migrations use raw SQL (no SQLAlchemy ORM models)
+- File naming uses sequential IDs: 001_initial_schema.py, 002_..., etc.

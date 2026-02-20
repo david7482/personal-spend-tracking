@@ -1,7 +1,8 @@
 terraform {
   backend "s3" {
     bucket = "david74-terraform-remote-state-storage"
-    key    = "spend-tracking/terraform.tfstate"
+    workspace_key_prefix = "personal-spend-tracking"
+    key                  = "terraform.tfstate"
     region = "us-west-2"
   }
 }

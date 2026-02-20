@@ -9,6 +9,7 @@ packages = [{include = "spend_tracking", from = "src"}]
 python = "^3.12"
 boto3 = "^1.35"
 psycopg2-binary = "^2.9"
+alembic = "^1.18.4"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0"

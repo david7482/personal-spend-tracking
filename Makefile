@@ -1,4 +1,4 @@
-.PHONY: build build-router build-worker deploy deploy-router deploy-worker clean test
+.PHONY: build build-router build-worker deploy deploy-router deploy-worker clean test migrate migrate-new
 
 ROUTER_FUNCTION := spend-tracking-router
 WORKER_FUNCTION := spend-tracking-worker
@@ -39,3 +39,9 @@ clean:
 
 test:
 	poetry run pytest tests/ -v
+
+migrate:
+	poetry run alembic upgrade head
+
+migrate-new:
+	poetry run alembic revision -m "$(name)"
