@@ -1,4 +1,5 @@
 import logging
+from datetime import UTC
 from email.parser import BytesHeaderParser
 from email.utils import getaddresses, parsedate_to_datetime
 
@@ -41,8 +42,9 @@ class ValidateAndEnqueue:
                 try:
                     received_at = parsedate_to_datetime(date_str).isoformat()
                 except Exception:
-                    from datetime import datetime, timezone
-                    received_at = datetime.now(timezone.utc).isoformat()
+                    from datetime import datetime
+
+                    received_at = datetime.now(UTC).isoformat()
 
                 self._queue.send_message(
                     {
@@ -52,7 +54,10 @@ class ValidateAndEnqueue:
                         "received_at": received_at,
                     }
                 )
-                logger.info("Enqueued email", extra={"address": addr, "sender": sender, "s3_key": s3_key})
+                logger.info(
+                    "Enqueued email",
+                    extra={"address": addr, "sender": sender, "s3_key": s3_key},
+                )
                 return True
 
         logger.warning("No registered address found", extra={"s3_key": s3_key})

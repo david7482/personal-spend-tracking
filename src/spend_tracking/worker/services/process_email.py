@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from email import message_from_bytes
 from email.header import decode_header
 from email.message import Message
@@ -44,10 +44,13 @@ class ProcessEmail:
             raw_s3_key=s3_key,
             received_at=datetime.fromisoformat(received_at),
             parsed_data=None,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         self._repository.save_email(email)
-        logger.info("Saved email", extra={"email_id": email.id, "address": address, "s3_key": s3_key})
+        logger.info(
+            "Saved email",
+            extra={"email_id": email.id, "address": address, "s3_key": s3_key},
+        )
 
     @staticmethod
     def _decode_header(value: str | None) -> str | None:
@@ -66,12 +69,16 @@ class ProcessEmail:
     def _extract_body(msg: Message, content_type: str) -> str | None:
         if not msg.is_multipart():
             if msg.get_content_type() == content_type:
-                payload = msg.get_payload(decode=True)
+                payload: bytes | None = msg.get_payload(decode=True)  # type: ignore[assignment]
+                if payload is None:
+                    return None
                 return payload.decode(msg.get_content_charset("utf-8"))
             return None
 
         for part in msg.walk():
             if part.get_content_type() == content_type:
-                payload = part.get_payload(decode=True)
+                payload = part.get_payload(decode=True)  # type: ignore[assignment]
+                if payload is None:
+                    return None
                 return payload.decode(part.get_content_charset("utf-8"))
         return None

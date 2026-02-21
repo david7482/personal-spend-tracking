@@ -14,11 +14,11 @@ class S3EmailStorage(EmailStorage):
             Key=s3_key,
             Range="bytes=0-8191",
         )
-        return response["Body"].read()
+        return bytes(response["Body"].read())
 
     def get_email_raw(self, s3_key: str) -> bytes:
         response = self._s3.get_object(
             Bucket=self._bucket,
             Key=s3_key,
         )
-        return response["Body"].read()
+        return bytes(response["Body"].read())

@@ -14,7 +14,7 @@ _repository = DbEmailRepository(os.environ["SSM_DB_CONNECTION_STRING"])
 _service = ValidateAndEnqueue(_storage, _repository, _queue)
 
 
-def handler(event, context):
+def handler(event: dict, context: object) -> None:
     for record in event["Records"]:
         s3_key = record["s3"]["object"]["key"]
         logger.info("Processing S3 object", extra={"s3_key": s3_key})

@@ -1,8 +1,10 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 
-def _make_raw_headers(to_address: str, from_address: str = "sender@example.com") -> bytes:
+def _make_raw_headers(
+    to_address: str, from_address: str = "sender@example.com"
+) -> bytes:
     return (
         f"From: {from_address}\r\n"
         f"To: {to_address}\r\n"
@@ -28,7 +30,7 @@ def test_enqueues_for_active_registered_address():
         prefix="bank",
         label="Test",
         is_active=True,
-        created_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        created_at=datetime(2026, 1, 1, tzinfo=UTC),
     )
 
     service = ValidateAndEnqueue(storage, repository, queue)
@@ -49,7 +51,9 @@ def test_skips_unregistered_address():
     repository = MagicMock()
     queue = MagicMock()
 
-    storage.get_email_headers.return_value = _make_raw_headers("unknown@mail.david74.dev")
+    storage.get_email_headers.return_value = _make_raw_headers(
+        "unknown@mail.david74.dev"
+    )
     repository.get_registered_address.return_value = None
 
     service = ValidateAndEnqueue(storage, repository, queue)
@@ -75,7 +79,7 @@ def test_skips_inactive_address():
         prefix="bank",
         label="Test",
         is_active=False,
-        created_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        created_at=datetime(2026, 1, 1, tzinfo=UTC),
     )
 
     service = ValidateAndEnqueue(storage, repository, queue)
@@ -112,7 +116,7 @@ def test_checks_delivered_to_header():
                 prefix="bank",
                 label="Test",
                 is_active=True,
-                created_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+                created_at=datetime(2026, 1, 1, tzinfo=UTC),
             )
         return None
 
