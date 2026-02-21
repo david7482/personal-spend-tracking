@@ -667,6 +667,7 @@ Expected: FAIL with `ModuleNotFoundError`
 import logging
 from datetime import datetime, timezone
 from email import message_from_bytes
+from email.header import decode_header
 from email.message import Message
 
 from spend_tracking.shared.domain.models import Email
@@ -695,7 +696,7 @@ class ProcessEmail:
         raw = self._storage.get_email_raw(s3_key)
         msg = message_from_bytes(raw)
 
-        subject = msg.get("Subject")
+        subject = self._decode_header(msg.get("Subject"))
         body_text = self._extract_body(msg, "text/plain")
         body_html = self._extract_body(msg, "text/html")
 
@@ -713,6 +714,19 @@ class ProcessEmail:
         )
         self._repository.save_email(email)
         logger.info("Saved email %s for %s", email.id, address)
+
+    @staticmethod
+    def _decode_header(value: str | None) -> str | None:
+        if value is None:
+            return None
+        parts = decode_header(value)
+        decoded = []
+        for data, charset in parts:
+            if isinstance(data, bytes):
+                decoded.append(data.decode(charset or "utf-8", errors="replace"))
+            else:
+                decoded.append(data)
+        return "".join(decoded)
 
     @staticmethod
     def _extract_body(msg: Message, content_type: str) -> str | None:
@@ -859,7 +873,8 @@ class DbEmailRepository(EmailRepository):
                     "INSERT INTO emails "
                     "(address, sender, subject, body_html, body_text, "
                     "raw_s3_key, received_at, parsed_data, created_at) "
-                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) "
+                    "RETURNING id",
                     (
                         email.address,
                         email.sender,
@@ -872,6 +887,7 @@ class DbEmailRepository(EmailRepository):
                         email.created_at,
                     ),
                 )
+                email.id = cur.fetchone()[0]
             conn.commit()
 ```
 
@@ -979,39 +995,40 @@ git commit -m "feat: add Router and Worker Lambda handlers"
 **Step 1: Create the Makefile**
 
 ```makefile
-.PHONY: build build-router build-worker deploy deploy-router deploy-worker clean test
+.PHONY: build build-router build-worker deploy deploy-router deploy-worker clean test migrate migrate-new
 
 ROUTER_FUNCTION := spend-tracking-router
 WORKER_FUNCTION := spend-tracking-worker
 BUILD_DIR := .build
+AWS_REGION := us-east-1
 
 build: build-router build-worker
 
 build-router:
 	rm -rf $(BUILD_DIR)/router
 	mkdir -p $(BUILD_DIR)/router
-	poetry export --without-hashes --without dev -o $(BUILD_DIR)/router/requirements.txt
-	pip install -r $(BUILD_DIR)/router/requirements.txt -t $(BUILD_DIR)/router/ --quiet
+	pip install --no-deps -t $(BUILD_DIR)/router/ --quiet --platform manylinux2014_x86_64 --python-version 3.12 --only-binary=:all: psycopg2-binary
 	cp -r src/spend_tracking $(BUILD_DIR)/router/
 	cd $(BUILD_DIR)/router && zip -r ../router.zip . -x "*.pyc" "__pycache__/*"
 
 build-worker:
 	rm -rf $(BUILD_DIR)/worker
 	mkdir -p $(BUILD_DIR)/worker
-	poetry export --without-hashes --without dev -o $(BUILD_DIR)/worker/requirements.txt
-	pip install -r $(BUILD_DIR)/worker/requirements.txt -t $(BUILD_DIR)/worker/ --quiet
+	pip install --no-deps -t $(BUILD_DIR)/worker/ --quiet --platform manylinux2014_x86_64 --python-version 3.12 --only-binary=:all: psycopg2-binary
 	cp -r src/spend_tracking $(BUILD_DIR)/worker/
 	cd $(BUILD_DIR)/worker && zip -r ../worker.zip . -x "*.pyc" "__pycache__/*"
 
 deploy-router: build-router
 	aws lambda update-function-code \
 		--function-name $(ROUTER_FUNCTION) \
-		--zip-file fileb://$(BUILD_DIR)/router.zip
+		--zip-file fileb://$(BUILD_DIR)/router.zip \
+		--region $(AWS_REGION)
 
 deploy-worker: build-worker
 	aws lambda update-function-code \
 		--function-name $(WORKER_FUNCTION) \
-		--zip-file fileb://$(BUILD_DIR)/worker.zip
+		--zip-file fileb://$(BUILD_DIR)/worker.zip \
+		--region $(AWS_REGION)
 
 deploy: deploy-router deploy-worker
 
@@ -1020,6 +1037,12 @@ clean:
 
 test:
 	poetry run pytest tests/ -v
+
+migrate:
+	poetry run alembic upgrade head
+
+migrate-new:
+	poetry run alembic revision -m "$(name)"
 ```
 
 **Step 2: Verify `make test` works**
@@ -1049,6 +1072,7 @@ git commit -m "feat: add Makefile for Lambda build and deploy"
 - Create: `infra/lambda.tf`
 - Create: `infra/iam.tf`
 - Create: `infra/ssm.tf`
+- Create: `infra/cloudflare.tf`
 
 **Step 1: Create backend.tf**
 
@@ -1073,6 +1097,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 5.0"
+    }
   }
   required_version = ">= 1.0"
 }
@@ -1080,6 +1108,8 @@ terraform {
 provider "aws" {
   region = "us-east-1"
 }
+
+provider "cloudflare" {}
 ```
 
 **Step 3: Create variables.tf**
@@ -1166,16 +1196,16 @@ resource "aws_ses_receipt_rule" "catch_all" {
 
 ```hcl
 # infra/sqs.tf
-resource "aws_sqs_queue" "dlq" {
-  name = "${var.project_name}-dlq"
+resource "aws_sqs_queue" "email-dlq" {
+  name = "${var.project_name}-email-dlq"
 }
 
-resource "aws_sqs_queue" "processing" {
-  name                       = "${var.project_name}-processing"
+resource "aws_sqs_queue" "email-processing" {
+  name                       = "${var.project_name}-email-processing"
   visibility_timeout_seconds = 300
 
   redrive_policy = jsonencode({
-    deadLetterTargetArn = aws_sqs_queue.dlq.arn
+    deadLetterTargetArn = aws_sqs_queue.email-dlq.arn
     maxReceiveCount     = 3
   })
 }
@@ -1218,7 +1248,7 @@ resource "aws_iam_role_policy" "router" {
       {
         Effect   = "Allow"
         Action   = ["sqs:SendMessage"]
-        Resource = aws_sqs_queue.processing.arn
+        Resource = aws_sqs_queue.email-processing.arn
       },
       {
         Effect   = "Allow"
@@ -1288,7 +1318,7 @@ resource "aws_iam_role_policy" "worker" {
           "sqs:DeleteMessage",
           "sqs:GetQueueAttributes"
         ]
-        Resource = aws_sqs_queue.processing.arn
+        Resource = aws_sqs_queue.email-processing.arn
       }
     ]
   })
@@ -1322,7 +1352,7 @@ resource "aws_lambda_function" "router" {
   environment {
     variables = {
       S3_BUCKET              = aws_s3_bucket.raw_emails.id
-      SQS_QUEUE_URL          = aws_sqs_queue.processing.url
+      SQS_QUEUE_URL          = aws_sqs_queue.email-processing.url
       SSM_DB_CONNECTION_STRING = aws_ssm_parameter.db_connection_string.name
     }
   }
@@ -1362,7 +1392,7 @@ resource "aws_lambda_function" "worker" {
 }
 
 resource "aws_lambda_event_source_mapping" "worker_sqs" {
-  event_source_arn = aws_sqs_queue.processing.arn
+  event_source_arn = aws_sqs_queue.email-processing.arn
   function_name    = aws_lambda_function.worker.arn
   batch_size       = 1
 }
@@ -1383,7 +1413,35 @@ resource "aws_ssm_parameter" "db_connection_string" {
 }
 ```
 
-**Step 10: Create outputs.tf**
+**Step 10: Create cloudflare.tf**
+
+```hcl
+# infra/cloudflare.tf
+data "cloudflare_zone" "main" {
+  filter = {
+    name = "david74.dev"
+  }
+}
+
+resource "cloudflare_dns_record" "ses_verification" {
+  zone_id = data.cloudflare_zone.main.zone_id
+  name    = "_amazonses.${var.email_domain}"
+  type    = "TXT"
+  content = "\"${aws_ses_domain_identity.email.verification_token}\""
+  ttl     = 3600
+}
+
+resource "cloudflare_dns_record" "ses_mx" {
+  zone_id  = data.cloudflare_zone.main.zone_id
+  name     = var.email_domain
+  type     = "MX"
+  content  = "inbound-smtp.us-east-1.amazonaws.com"
+  ttl      = 3600
+  priority = 10
+}
+```
+
+**Step 11: Create outputs.tf**
 
 ```hcl
 # infra/outputs.tf
@@ -1405,7 +1463,7 @@ output "raw_emails_bucket" {
 }
 
 output "sqs_queue_url" {
-  value = aws_sqs_queue.processing.url
+  value = aws_sqs_queue.email-processing.url
 }
 ```
 
@@ -1439,77 +1497,58 @@ aws ssm put-parameter \
   --region us-east-1
 ```
 
-**Step 2: Create database tables in Neon PG**
+**Step 2: Run database migrations**
 
-Connect to Neon and run:
+```bash
+DATABASE_URL="postgresql://..." make migrate
+```
 
-```sql
-CREATE TABLE registered_addresses (
-    id          BIGSERIAL PRIMARY KEY,
-    address     TEXT UNIQUE NOT NULL,
-    prefix      TEXT NOT NULL,
-    label       TEXT,
-    is_active   BOOLEAN DEFAULT true,
-    created_at  TIMESTAMPTZ DEFAULT now()
-);
-
-CREATE TABLE emails (
-    id          BIGSERIAL PRIMARY KEY,
-    address     TEXT NOT NULL REFERENCES registered_addresses(address),
-    sender      TEXT NOT NULL,
-    subject     TEXT,
-    body_html   TEXT,
-    body_text   TEXT,
-    raw_s3_key  TEXT NOT NULL,
-    received_at TIMESTAMPTZ NOT NULL,
-    parsed_data JSONB,
-    created_at  TIMESTAMPTZ DEFAULT now()
-);
-
-CREATE INDEX idx_emails_address ON emails(address);
-CREATE INDEX idx_emails_received_at ON emails(received_at DESC);
-CREATE INDEX idx_emails_parsed_data ON emails USING GIN(parsed_data);
+Or with `.envrc` (direnv):
+```bash
+make migrate
 ```
 
 **Step 3: Deploy Terraform**
 
-Run: `cd infra && terraform plan && terraform apply`
+Requires `CLOUDFLARE_API_TOKEN` env var (set in `.envrc`).
 
-Note the `ses_verification_token` output.
+Run: `cd infra && terraform init && terraform plan && terraform apply`
 
-**Step 4: Add DNS records in Cloudflare**
+This creates all AWS resources AND Cloudflare DNS records (TXT for SES verification + MX for inbound email) in one apply.
 
-Add these records for `mail.david74.dev`:
+**Step 4: Verify SES domain verification**
 
-| Type | Name | Value |
-|------|------|-------|
-| TXT | `_amazonses.mail.david74.dev` | `<ses_verification_token from terraform output>` |
-| MX | `mail.david74.dev` | `10 inbound-smtp.us-east-1.amazonaws.com` |
-
-**Step 5: Wait for SES domain verification**
-
-Check status:
+DNS records are created automatically by Terraform. Check status:
 ```bash
 aws ses get-identity-verification-attributes \
   --identities mail.david74.dev \
   --region us-east-1
 ```
-Expected: `"VerificationStatus": "Success"`
+Expected: `"VerificationStatus": "Success"` (may take a few minutes after DNS propagation)
 
-**Step 6: Deploy Lambda code**
+**Step 5: Deploy Lambda code**
 
 Run: `make deploy`
 
-**Step 7: Register a test address**
+Note: `psycopg2-binary` is installed targeting `manylinux2014_x86_64` / `python3.12` to match the Lambda runtime.
 
-```sql
-INSERT INTO registered_addresses (address, prefix, label)
-VALUES ('test-abc123@mail.david74.dev', 'test', 'Test address');
+**Step 6: Register a test address**
+
+```bash
+psql "$DATABASE_URL" -c "INSERT INTO registered_addresses (address, prefix, label, is_active) VALUES ('test@mail.david74.dev', 'test', 'Test Address', true);"
 ```
 
-**Step 8: Send a test email**
+**Step 7: Send a test email**
 
-Send an email to `test-abc123@mail.david74.dev` and check:
-- CloudWatch Logs for Router Lambda
-- CloudWatch Logs for Worker Lambda
-- `emails` table in Neon PG
+```bash
+aws ses send-email \
+  --from "sender@mail.david74.dev" \
+  --destination "ToAddresses=test@mail.david74.dev" \
+  --message "Subject={Data='Test Email'},Body={Text={Data='Test body.'}}" \
+  --region us-east-1
+```
+
+Check:
+- `aws logs tail /aws/lambda/spend-tracking-router --since 5m --region us-east-1`
+- `aws logs tail /aws/lambda/spend-tracking-worker --since 5m --region us-east-1`
+- `psql "$DATABASE_URL" -c "SELECT id, address, sender, subject FROM emails;"`

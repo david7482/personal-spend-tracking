@@ -2,8 +2,8 @@ Database migrations for the spend-tracking service using Alembic.
 
 ## Usage
 
-Run migrations:
-    DATABASE_URL="postgresql://..." make migrate
+Run migrations (DATABASE_URL is auto-loaded from .envrc via direnv):
+    make migrate
 
 Create a new migration:
     make migrate-new name="description"
@@ -13,6 +13,6 @@ Use --rev-id for sequential numbering:
 
 ## Notes
 
-- DATABASE_URL must be set as an environment variable
+- DATABASE_URL must be set as an environment variable (auto-loaded from .envrc)
 - Migrations use raw SQL (no SQLAlchemy ORM models)
 - File naming uses sequential IDs: 001_initial_schema.py, 002_..., etc.
