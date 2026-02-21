@@ -1,6 +1,16 @@
-# Plan: CI/CD with GitHub Workflows + Makefile
+# CI/CD with GitHub Workflows + Makefile — Implementation Plan
 
-## Decisions
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+**Goal:** Add CI/CD pipelines using GitHub Actions and a Makefile so that all checks (lint, format, typecheck, test, build) run on PRs, and merged code auto-deploys with migrations.
+
+**Architecture:** Makefile targets reusable locally and in CI. Two GitHub workflows: CI on pull requests, CD on push to master.
+
+**Tech Stack:** Ruff (lint + format), MyPy (type checking), pytest, GitHub Actions, Makefile
+
+---
+
+### Decisions
 
 | Topic | Decision |
 |-------|----------|
@@ -12,7 +22,12 @@
 
 ---
 
-## 1. Add dev dependencies to `pyproject.toml`
+### Task 1: Add Dev Dependencies to `pyproject.toml`
+
+**Files:**
+- Modify: `pyproject.toml`
+
+**Step 1: Add dependencies and tool config**
 
 Add `ruff` and `mypy` to `[tool.poetry.group.dev.dependencies]`, and add
 `[tool.ruff]` and `[tool.mypy]` configuration sections.
@@ -41,11 +56,21 @@ disallow_untyped_defs = true
 check_untyped_defs = true
 ```
 
+**Step 2: Commit**
+
+```bash
+git add pyproject.toml
+git commit -m "chore: add ruff, mypy, boto3-stubs dev dependencies"
+```
+
 ---
 
-## 2. Add new Makefile targets
+### Task 2: Add Makefile Targets
 
-New targets, all usable locally **and** in CI:
+**Files:**
+- Modify: `Makefile`
+
+**Step 1: Add lint, format, typecheck, and ci targets**
 
 ```makefile
 lint:            ## Run ruff linter
@@ -71,9 +96,21 @@ ci:              ## Run all CI checks (lint, format, typecheck, test, build)
 	$(MAKE) build
 ```
 
+**Step 2: Commit**
+
+```bash
+git add Makefile
+git commit -m "chore: add lint, format, typecheck, ci Makefile targets"
+```
+
 ---
 
-## 3. CI workflow — `.github/workflows/ci.yml`
+### Task 3: Create CI Workflow
+
+**Files:**
+- Create: `.github/workflows/ci.yml`
+
+**Step 1: Create the workflow**
 
 Triggers on **pull requests** to `main`.
 
@@ -102,9 +139,21 @@ jobs:
 Single job calling `make ci` — keeps the workflow thin and the logic in the
 Makefile where it's reusable locally.
 
+**Step 2: Commit**
+
+```bash
+git add .github/workflows/ci.yml
+git commit -m "ci: add CI workflow for pull requests"
+```
+
 ---
 
-## 4. CD workflow — `.github/workflows/cd.yml`
+### Task 4: Create CD Workflow
+
+**Files:**
+- Create: `.github/workflows/cd.yml`
+
+**Step 1: Create the workflow**
 
 Triggers on **push** to `main` (i.e. merged PRs).
 
@@ -142,11 +191,20 @@ jobs:
 
 **Order**: migrate → deploy (new schema first, then new code).
 
+**Step 2: Commit**
+
+```bash
+git add .github/workflows/cd.yml
+git commit -m "ci: add CD workflow for deploy on merge to main"
+```
+
 ---
 
-## 5. GitHub Secrets required
+### Task 5: Configure GitHub Secrets
 
-Set these in **repo → Settings → Secrets and variables → Actions**:
+**Files:** None (manual configuration)
+
+**Step 1: Set secrets in repo → Settings → Secrets and variables → Actions**
 
 | Secret | Purpose |
 |--------|---------|
@@ -156,24 +214,19 @@ Set these in **repo → Settings → Secrets and variables → Actions**:
 
 ---
 
-## 6. Files changed / created
+### Task 6: Verify Local Developer Workflow
 
-| File | Action |
-|------|--------|
-| `pyproject.toml` | Edit — add ruff, mypy, boto3-stubs deps + config |
-| `Makefile` | Edit — add lint, format, typecheck, ci targets |
-| `.github/workflows/ci.yml` | Create |
-| `.github/workflows/cd.yml` | Create |
+**Files:** None (manual verification)
 
----
-
-## 7. Local developer workflow
+**Step 1: Run full CI locally**
 
 ```bash
-# Run the same checks CI will run
 make ci
+```
 
-# Auto-fix lint issues + format
+**Step 2: Verify auto-fix commands work**
+
+```bash
 make lint-fix
 make format
 ```
