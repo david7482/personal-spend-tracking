@@ -30,9 +30,7 @@ class _TableCellExtractor(HTMLParser):
     def handle_endtag(self, tag: str) -> None:
         if tag == "td" and self._in_td:
             self._in_td = False
-            text = self._current.strip()
-            if text:
-                self.cells.append(text)
+            self.cells.append(self._current.strip())
         elif tag in ("style", "script"):
             self._skip = False
 
