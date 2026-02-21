@@ -154,7 +154,8 @@ def test_populates_parsed_data_when_parser_matches():
     <tr><td>卡別</td><td>行動卡號後4碼</td><td>授權日期</td><td>授權時間</td><td>消費地區</td></tr>
     <tr><td>正卡</td><td>4623</td><td>2026/02/19</td><td>15:40</td><td>TW</td></tr>
     <tr><td>消費金額</td><td>商店名稱</td><td>消費類別</td><td>備註</td></tr>
-    <tr><td colspan="2">NT$330</td><td>Test Store</td><td>線上繳費</td><td>&nbsp;</td></tr>
+    <tr><td colspan="2">NT$330</td><td>Test Store</td>
+    <td>線上繳費</td><td>&nbsp;</td></tr>
     </tbody></table>
     </body></html>"""
 

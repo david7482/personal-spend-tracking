@@ -39,7 +39,7 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 test:
-	poetry run pytest tests/ -v
+	PYTHONPATH=src poetry run pytest tests/ -v
 
 migrate:
 	poetry run alembic upgrade head
@@ -60,6 +60,6 @@ format:
 	poetry run ruff format src/ tests/
 
 typecheck:
-	poetry run mypy
+	PYTHONPATH=src poetry run mypy
 
 ci: lint format-check typecheck test build

@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from html.parser import HTMLParser
 
@@ -13,21 +13,21 @@ CATHAY_ADDRESS_PREFIX = "cathay-"
 class _TableCellExtractor(HTMLParser):
     """Extracts text content from all <td> elements."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.cells: list[str] = []
         self._in_td = False
         self._current = ""
         self._skip = False
 
-    def handle_starttag(self, tag, attrs):
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         if tag == "td":
             self._in_td = True
             self._current = ""
         elif tag in ("style", "script"):
             self._skip = True
 
-    def handle_endtag(self, tag):
+    def handle_endtag(self, tag: str) -> None:
         if tag == "td" and self._in_td:
             self._in_td = False
             text = self._current.strip()
@@ -36,11 +36,11 @@ class _TableCellExtractor(HTMLParser):
         elif tag in ("style", "script"):
             self._skip = False
 
-    def handle_data(self, data):
+    def handle_data(self, data: str) -> None:
         if self._in_td and not self._skip:
             self._current += data
 
-    def handle_entityref(self, name):
+    def handle_entityref(self, name: str) -> None:
         if self._in_td and name == "nbsp":
             pass  # skip &nbsp;
 
