@@ -1,5 +1,5 @@
 import logging
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timezone
 from email import message_from_bytes
 from email.header import decode_header
 from email.message import Message
