@@ -1,4 +1,4 @@
-.PHONY: build build-router build-worker deploy deploy-router deploy-worker clean test migrate migrate-new
+.PHONY: build build-router build-worker deploy deploy-router deploy-worker clean test migrate migrate-new lint lint-fix format-check format typecheck ci
 
 ROUTER_FUNCTION := spend-tracking-router
 WORKER_FUNCTION := spend-tracking-worker
@@ -46,3 +46,20 @@ migrate:
 
 migrate-new:
 	poetry run alembic revision -m "$(name)"
+
+lint:
+	poetry run ruff check src/ tests/
+
+lint-fix:
+	poetry run ruff check --fix src/ tests/
+
+format-check:
+	poetry run ruff format --check src/ tests/
+
+format:
+	poetry run ruff format src/ tests/
+
+typecheck:
+	poetry run mypy
+
+ci: lint format-check typecheck test build
