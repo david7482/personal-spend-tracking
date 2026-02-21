@@ -72,3 +72,30 @@ def test_email_with_parsed_data():
     assert email.id is None
     assert email.parsed_data is not None
     assert email.parsed_data["amount"] == 12345
+
+
+def test_transaction_creation():
+    from decimal import Decimal
+    from datetime import datetime, timezone
+    from spend_tracking.shared.domain.models import Transaction
+
+    txn = Transaction(
+        id=None,
+        source_type="email",
+        source_id=42,
+        bank="cathay",
+        transaction_at=datetime(2026, 2, 19, 15, 40, tzinfo=timezone.utc),
+        region="TW",
+        amount=Decimal("330.00"),
+        currency="TWD",
+        merchant="國立臺灣科學教育館",
+        category="線上繳費",
+        notes=None,
+        raw_data={"card_last_four": "6903", "card_type": "正卡"},
+        created_at=datetime(2026, 2, 20, 6, 23, tzinfo=timezone.utc),
+    )
+    assert txn.bank == "cathay"
+    assert txn.amount == Decimal("330.00")
+    assert txn.merchant == "國立臺灣科學教育館"
+    assert txn.raw_data["card_type"] == "正卡"
+    assert txn.id is None
