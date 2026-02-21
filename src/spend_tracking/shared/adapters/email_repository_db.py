@@ -19,7 +19,8 @@ class DbEmailRepository(EmailRepository):
     def get_registered_address(self, address: str) -> RegisteredAddress | None:
         with psycopg2.connect(self._connection_string) as conn, conn.cursor() as cur:
             cur.execute(
-                "SELECT id, address, prefix, label, is_active, created_at "
+                "SELECT id, address, prefix, label, is_active, created_at, "
+                "line_recipient_id "
                 "FROM registered_addresses WHERE address = %s",
                 (address,),
             )
@@ -33,6 +34,7 @@ class DbEmailRepository(EmailRepository):
                 label=row[3],
                 is_active=row[4],
                 created_at=row[5],
+                line_recipient_id=row[6],
             )
 
     def save_email(self, email: Email) -> None:
