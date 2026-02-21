@@ -1,5 +1,5 @@
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from datetime import datetime, timezone, timedelta
 
 TAIPEI_TZ = timezone(timedelta(hours=8))
 
@@ -25,23 +25,27 @@ CATHAY_HTML_FIXTURE = """
       <td>消費金額</td><td>商店名稱</td><td>消費類別</td><td>備註</td>
     </tr>
     <tr>
-      <td colspan="2">NT$330</td><td>國立臺灣科學教育館</td><td>線上繳費</td><td>&nbsp;</td>
+      <td colspan="2">NT$330</td><td>國立臺灣科學教育館</td>
+      <td>線上繳費</td><td>&nbsp;</td>
     </tr>
   </tbody>
 </table>
 <table>
   <tbody>
     <tr>
-      <td>卡別</td><td>行動卡號後4碼</td><td>授權日期</td><td>授權時間</td><td>消費地區</td>
+      <td>卡別</td><td>行動卡號後4碼</td>
+      <td>授權日期</td><td>授權時間</td><td>消費地區</td>
     </tr>
     <tr>
-      <td>正卡</td><td>6012</td><td>2026/02/19</td><td>00:27</td><td>NL</td>
+      <td>正卡</td><td>6012</td><td>2026/02/19</td>
+      <td>00:27</td><td>NL</td>
     </tr>
     <tr>
       <td>消費金額</td><td>商店名稱</td><td>消費類別</td><td>備註</td>
     </tr>
     <tr>
-      <td colspan="2">NT$1,040</td><td>PRAGMATICENGINEER.COM</td><td>其他</td><td>&nbsp;</td>
+      <td colspan="2">NT$1,040</td>
+      <td>PRAGMATICENGINEER.COM</td><td>其他</td><td>&nbsp;</td>
     </tr>
   </tbody>
 </table>
@@ -54,7 +58,10 @@ def test_can_parse_matches_cathay_address():
     from spend_tracking.worker.services.parsers.cathay import CathayParser
 
     parser = CathayParser()
-    assert parser.can_parse("cathay-cc@mail.david74.dev", "國泰世華銀行消費彙整通知") is True
+    assert (
+        parser.can_parse("cathay-cc@mail.david74.dev", "國泰世華銀行消費彙整通知")
+        is True
+    )
 
 
 def test_can_parse_rejects_other_address():
@@ -68,7 +75,8 @@ def test_parses_two_transactions():
     from spend_tracking.worker.services.parsers.cathay import CathayParser
 
     parser = CathayParser()
-    result = parser.parse(CATHAY_HTML_FIXTURE, {"received_at": "2026-02-20T06:23:16+00:00"})
+    metadata = {"received_at": "2026-02-20T06:23:16+00:00"}
+    result = parser.parse(CATHAY_HTML_FIXTURE, metadata)
 
     assert len(result.transactions) == 2
 
@@ -79,6 +87,7 @@ def test_parses_two_transactions():
     assert txn1.region == "TW"
     assert txn1.transaction_at == datetime(2026, 2, 19, 15, 40, tzinfo=TAIPEI_TZ)
     assert txn1.bank == "cathay"
+    assert txn1.raw_data is not None
     assert txn1.raw_data["card_type"] == "正卡"
     assert txn1.raw_data["mobile_card_last_four"] == "4623"
 
@@ -92,7 +101,8 @@ def test_parsed_data_has_email_metadata():
     from spend_tracking.worker.services.parsers.cathay import CathayParser
 
     parser = CathayParser()
-    result = parser.parse(CATHAY_HTML_FIXTURE, {"received_at": "2026-02-20T06:23:16+00:00"})
+    metadata = {"received_at": "2026-02-20T06:23:16+00:00"}
+    result = parser.parse(CATHAY_HTML_FIXTURE, metadata)
 
     assert result.parsed_data["bank"] == "cathay"
     assert result.parsed_data["email_type"] == "daily_transaction_summary"
@@ -105,7 +115,8 @@ def test_malformed_html_returns_empty_result():
     from spend_tracking.worker.services.parsers.cathay import CathayParser
 
     parser = CathayParser()
-    result = parser.parse("<html><body>no tables</body></html>", {"received_at": "2026-02-20T06:23:16+00:00"})
+    metadata = {"received_at": "2026-02-20T06:23:16+00:00"}
+    result = parser.parse("<html><body>no tables</body></html>", metadata)
 
     assert len(result.transactions) == 0
     assert result.parsed_data["bank"] == "cathay"

@@ -4,7 +4,9 @@ import boto3
 import psycopg2
 
 from spend_tracking.shared.domain.models import Transaction
-from spend_tracking.shared.interfaces.transaction_repository import TransactionRepository
+from spend_tracking.shared.interfaces.transaction_repository import (
+    TransactionRepository,
+)
 
 
 class DbTransactionRepository(TransactionRepository):
@@ -25,7 +27,8 @@ class DbTransactionRepository(TransactionRepository):
                     cur.execute(
                         "INSERT INTO transactions "
                         "(source_type, source_id, bank, transaction_at, region, "
-                        "amount, currency, merchant, category, notes, raw_data, created_at) "
+                        "amount, currency, merchant, category, "
+                        "notes, raw_data, created_at) "
                         "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
                         "RETURNING id",
                         (
@@ -43,5 +46,7 @@ class DbTransactionRepository(TransactionRepository):
                             txn.created_at,
                         ),
                     )
-                    txn.id = cur.fetchone()[0]
+                    row = cur.fetchone()
+                    assert row is not None
+                    txn.id = row[0]
             conn.commit()

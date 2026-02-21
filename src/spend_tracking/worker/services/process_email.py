@@ -1,5 +1,5 @@
 import logging
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 from email import message_from_bytes
 from email.header import decode_header
 from email.message import Message
@@ -7,7 +7,9 @@ from email.message import Message
 from spend_tracking.shared.domain.models import Email
 from spend_tracking.shared.interfaces.email_repository import EmailRepository
 from spend_tracking.shared.interfaces.email_storage import EmailStorage
-from spend_tracking.shared.interfaces.transaction_repository import TransactionRepository
+from spend_tracking.shared.interfaces.transaction_repository import (
+    TransactionRepository,
+)
 from spend_tracking.worker.services.parsers import find_parser
 
 logger = logging.getLogger(__name__)
@@ -48,7 +50,10 @@ class ProcessEmail:
                 parsed_data = result.parsed_data
                 transactions = result.transactions
             except Exception:
-                logger.exception("Parser failed for %s, falling back to raw storage", address)
+                logger.exception(
+                    "Parser failed for %s, falling back",
+                    address,
+                )
 
         email = Email(
             id=None,
@@ -60,7 +65,7 @@ class ProcessEmail:
             raw_s3_key=s3_key,
             received_at=datetime.fromisoformat(received_at),
             parsed_data=parsed_data,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         self._repository.save_email(email)
         logger.info(
@@ -72,7 +77,11 @@ class ProcessEmail:
             for txn in transactions:
                 txn.source_id = email.id
             self._transaction_repository.save_transactions(transactions)
-            logger.info("Saved %d transactions for email %s", len(transactions), email.id)
+            logger.info(
+                "Saved %d transactions for email %s",
+                len(transactions),
+                email.id,
+            )
 
     @staticmethod
     def _decode_header(value: str | None) -> str | None:
