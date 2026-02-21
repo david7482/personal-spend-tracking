@@ -111,6 +111,46 @@ def test_parsed_data_has_email_metadata():
     assert result.parsed_data["transaction_count"] == 2
 
 
+def test_parses_transaction_with_empty_mobile_card():
+    from spend_tracking.worker.services.parsers.cathay import CathayParser
+
+    html = """
+    <html><body>
+    <table>
+      <tr><td>消費彙整通知</td></tr>
+      <tr><td>通知日期：2026/02/21</td></tr>
+      <tr><td>卡號後4碼： 6903</td></tr>
+    </table>
+    <table><tbody>
+      <tr>
+        <td>卡別</td><td>行動卡號後4碼</td><td>授權日期</td><td>授權時間</td><td>消費地區</td>
+      </tr>
+      <tr>
+        <td>正卡</td><td>&nbsp;</td><td>2026/02/20</td><td>07:42</td><td>TW</td>
+      </tr>
+      <tr>
+        <td>消費金額</td><td>商店名稱</td><td>消費類別</td><td>備註</td>
+      </tr>
+      <tr>
+        <td colspan="2">NT$500</td><td>財團法人報導者文化基金會</td>
+        <td>捐款</td><td>&nbsp;</td>
+      </tr>
+    </tbody></table>
+    </body></html>
+    """
+    parser = CathayParser()
+    result = parser.parse(html, {"received_at": "2026-02-21T15:00:00+00:00"})
+
+    assert len(result.transactions) == 1
+    txn = result.transactions[0]
+    assert txn.amount == Decimal("500")
+    assert txn.merchant == "財團法人報導者文化基金會"
+    assert txn.category == "捐款"
+    assert txn.transaction_at == datetime(2026, 2, 20, 7, 42, tzinfo=TAIPEI_TZ)
+    assert txn.raw_data is not None
+    assert txn.raw_data["mobile_card_last_four"] == ""
+
+
 def test_malformed_html_returns_empty_result():
     from spend_tracking.worker.services.parsers.cathay import CathayParser
 
