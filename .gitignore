@@ -10,3 +10,5 @@ infra/.terraform/
 infra/*.tfstate*
 infra/placeholder.zip
 .envrc
+.claude/settings.local.json
+.claude/worktrees/
