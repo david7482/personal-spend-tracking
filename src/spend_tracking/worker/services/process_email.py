@@ -47,7 +47,7 @@ class ProcessEmail:
             created_at=datetime.now(timezone.utc),
         )
         self._repository.save_email(email)
-        logger.info("Saved email %s for %s", email.id, address)
+        logger.info("Saved email", extra={"email_id": email.id, "address": address, "s3_key": s3_key})
 
     @staticmethod
     def _decode_header(value: str | None) -> str | None:

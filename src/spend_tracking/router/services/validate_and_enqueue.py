@@ -52,8 +52,8 @@ class ValidateAndEnqueue:
                         "received_at": received_at,
                     }
                 )
-                logger.info("Enqueued email for %s from %s", addr, sender)
+                logger.info("Enqueued email", extra={"address": addr, "sender": sender, "s3_key": s3_key})
                 return True
 
-        logger.warning("No registered address found for email at %s", s3_key)
+        logger.warning("No registered address found", extra={"s3_key": s3_key})
         return False

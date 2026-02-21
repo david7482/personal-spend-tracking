@@ -25,6 +25,12 @@ resource "aws_lambda_function" "router" {
     }
   }
 
+  logging_config {
+    log_format            = "JSON"
+    application_log_level = "INFO"
+    system_log_level      = "WARN"
+  }
+
   lifecycle {
     ignore_changes = [filename, source_code_hash]
   }
@@ -52,6 +58,12 @@ resource "aws_lambda_function" "worker" {
       S3_BUCKET               = aws_s3_bucket.raw_emails.id
       SSM_DB_CONNECTION_STRING = aws_ssm_parameter.db_connection_string.name
     }
+  }
+
+  logging_config {
+    log_format            = "JSON"
+    application_log_level = "INFO"
+    system_log_level      = "WARN"
   }
 
   lifecycle {
