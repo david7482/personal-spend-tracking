@@ -68,3 +68,34 @@ Registry in `__init__.py` with `find_parser(to_address, subject)`. Each parser i
 1. Create `src/spend_tracking/worker/services/parsers/bank_name.py` implementing `EmailParser`
 2. Register in `worker/services/parsers/__init__.py` `_PARSERS` list
 3. Add tests in `tests/worker/test_bank_name_parser.py`
+
+## Plan Files (`docs/plans/`)
+
+Plan files document design decisions and implementation steps for features. All plans live in `docs/plans/`.
+
+### Naming
+
+`YYYY-MM-DD-kebab-case-name-{design|implementation}.md`
+
+Examples:
+- `2026-02-21-email-spend-tracking-design.md`
+- `2026-02-21-email-spend-tracking-implementation.md`
+- `2026-02-22-bank-email-parsers-design.md`
+
+### Types
+
+**Design docs** (`-design.md`): High-level decisions, data models, architecture.
+- Title: `# {Feature Name} — Design`
+- Sections: Goal, Decisions (table), Data Model, Architecture, Testing
+
+**Implementation plans** (`-implementation.md`): Step-by-step build instructions.
+- Title: `# {Feature Name} — Implementation Plan`
+- Opens with: `> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.`
+- Header block: **Goal**, **Architecture**, **Tech Stack** (one-liners)
+- Body: `### Task N: Title` sections, each with **Files** (Modify/Create), numbered **Steps** (TDD: write test → fail → implement → pass → commit)
+
+### Rules
+
+- Every feature gets at least an implementation plan; add a design doc if there are non-trivial decisions.
+- Plans are written **before** code. They are the source of truth for what to build.
+- Use the date the plan was created, not the implementation date.
