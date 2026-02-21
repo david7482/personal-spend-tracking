@@ -7,6 +7,8 @@ from email.message import Message
 from spend_tracking.shared.domain.models import Email
 from spend_tracking.shared.interfaces.email_repository import EmailRepository
 from spend_tracking.shared.interfaces.email_storage import EmailStorage
+from spend_tracking.shared.interfaces.transaction_repository import TransactionRepository
+from spend_tracking.worker.services.parsers import find_parser
 
 logger = logging.getLogger(__name__)
 
@@ -16,9 +18,11 @@ class ProcessEmail:
         self,
         storage: EmailStorage,
         repository: EmailRepository,
+        transaction_repository: TransactionRepository,
     ) -> None:
         self._storage = storage
         self._repository = repository
+        self._transaction_repository = transaction_repository
 
     def execute(
         self,
@@ -34,6 +38,18 @@ class ProcessEmail:
         body_text = self._extract_body(msg, "text/plain")
         body_html = self._extract_body(msg, "text/html")
 
+        parsed_data = None
+        transactions = []
+
+        parser = find_parser(address, subject or "")
+        if parser and body_html:
+            try:
+                result = parser.parse(body_html, {"received_at": received_at})
+                parsed_data = result.parsed_data
+                transactions = result.transactions
+            except Exception:
+                logger.exception("Parser failed for %s, falling back to raw storage", address)
+
         email = Email(
             id=None,
             address=address,
@@ -43,14 +59,20 @@ class ProcessEmail:
             body_text=body_text,
             raw_s3_key=s3_key,
             received_at=datetime.fromisoformat(received_at),
-            parsed_data=None,
-            created_at=datetime.now(UTC),
+            parsed_data=parsed_data,
+            created_at=datetime.now(timezone.utc),
         )
         self._repository.save_email(email)
         logger.info(
             "Saved email",
             extra={"email_id": email.id, "address": address, "s3_key": s3_key},
         )
+
+        if transactions:
+            for txn in transactions:
+                txn.source_id = email.id
+            self._transaction_repository.save_transactions(transactions)
+            logger.info("Saved %d transactions for email %s", len(transactions), email.id)
 
     @staticmethod
     def _decode_header(value: str | None) -> str | None:
