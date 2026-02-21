@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 def test_registered_address_creation():
@@ -10,7 +10,7 @@ def test_registered_address_creation():
         prefix="bank",
         label="Test Bank",
         is_active=True,
-        created_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        created_at=datetime(2026, 1, 1, tzinfo=UTC),
     )
     assert addr.id == 1
     assert addr.address == "bank-abc123@mail.david74.dev"
@@ -28,7 +28,7 @@ def test_registered_address_optional_label():
         prefix="card",
         label=None,
         is_active=True,
-        created_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        created_at=datetime(2026, 1, 1, tzinfo=UTC),
     )
     assert addr.label is None
 
@@ -44,9 +44,9 @@ def test_email_creation():
         body_html="<p>Statement</p>",
         body_text="Statement",
         raw_s3_key="abc123",
-        received_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        received_at=datetime(2026, 1, 1, tzinfo=UTC),
         parsed_data=None,
-        created_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        created_at=datetime(2026, 1, 1, tzinfo=UTC),
     )
     assert email.id == 42
     assert email.sender == "noreply@bank.com"
@@ -65,9 +65,10 @@ def test_email_with_parsed_data():
         body_html=None,
         body_text="text",
         raw_s3_key="key1",
-        received_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        received_at=datetime(2026, 1, 1, tzinfo=UTC),
         parsed_data=parsed,
-        created_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        created_at=datetime(2026, 1, 1, tzinfo=UTC),
     )
     assert email.id is None
+    assert email.parsed_data is not None
     assert email.parsed_data["amount"] == 12345

@@ -13,10 +13,15 @@ _repository = DbEmailRepository(os.environ["SSM_DB_CONNECTION_STRING"])
 _service = ProcessEmail(_storage, _repository)
 
 
-def handler(event, context):
+def handler(event: dict, context: object) -> None:
     for record in event["Records"]:
         body = json.loads(record["body"])
-        logger.info("Processing email", extra={"s3_key": body["s3_key"], "address": body["address"], "sender": body["sender"]})
+        extra = {
+            "s3_key": body["s3_key"],
+            "address": body["address"],
+            "sender": body["sender"],
+        }
+        logger.info("Processing email", extra=extra)
         _service.execute(
             s3_key=body["s3_key"],
             address=body["address"],
