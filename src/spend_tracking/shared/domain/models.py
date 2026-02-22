@@ -20,7 +20,6 @@ class Email:
     address: str
     sender: str
     subject: str | None
-    body_html: str | None
     body_text: str | None
     raw_s3_key: str
     received_at: datetime

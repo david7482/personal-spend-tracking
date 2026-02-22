@@ -65,7 +65,6 @@ class ProcessEmail:
             address=address,
             sender=sender,
             subject=subject,
-            body_html=body_html,
             body_text=body_text,
             raw_s3_key=s3_key,
             received_at=datetime.fromisoformat(received_at),
