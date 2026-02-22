@@ -4,9 +4,10 @@ from email import message_from_bytes
 from email.header import decode_header
 from email.message import Message
 
-from spend_tracking.shared.domain.models import Email
+from spend_tracking.shared.domain.models import Email, Transaction
 from spend_tracking.shared.interfaces.email_repository import EmailRepository
 from spend_tracking.shared.interfaces.email_storage import EmailStorage
+from spend_tracking.shared.interfaces.notification_sender import NotificationSender
 from spend_tracking.shared.interfaces.transaction_repository import (
     TransactionRepository,
 )
@@ -21,10 +22,12 @@ class ProcessEmail:
         storage: EmailStorage,
         repository: EmailRepository,
         transaction_repository: TransactionRepository,
+        notification_sender: NotificationSender | None = None,
     ) -> None:
         self._storage = storage
         self._repository = repository
         self._transaction_repository = transaction_repository
+        self._notification_sender = notification_sender
 
     def execute(
         self,
@@ -41,7 +44,8 @@ class ProcessEmail:
         body_html = self._extract_body(msg, "text/html")
 
         parsed_data = None
-        transactions = []
+        transactions: list[Transaction] = []
+        bank: str | None = None
 
         parser = find_parser(address, subject or "")
         if parser and body_html:
@@ -49,6 +53,7 @@ class ProcessEmail:
                 result = parser.parse(body_html, {"received_at": received_at})
                 parsed_data = result.parsed_data
                 transactions = result.transactions
+                bank = parsed_data.get("bank")
             except Exception:
                 logger.exception(
                     "Parser failed for %s, falling back",
@@ -81,6 +86,28 @@ class ProcessEmail:
                 "Saved %d transactions for email %s",
                 len(transactions),
                 email.id,
+            )
+
+            self._send_notification(address, bank or "unknown", transactions)
+
+    def _send_notification(
+        self, address: str, bank: str, transactions: list[Transaction]
+    ) -> None:
+        if not self._notification_sender:
+            return
+        try:
+            registered = self._repository.get_registered_address(address)
+            if not registered or not registered.line_recipient_id:
+                return
+            self._notification_sender.send_transaction_notification(
+                recipient_id=registered.line_recipient_id,
+                bank=bank,
+                transactions=transactions,
+            )
+        except Exception:
+            logger.exception(
+                "Notification sending failed for %s",
+                address,
             )
 
     @staticmethod
