@@ -200,3 +200,186 @@ def test_no_parser_match_leaves_parsed_data_none():
     saved_email = repository.save_email.call_args[0][0]
     assert saved_email.parsed_data is None
     transaction_repository.save_transactions.assert_not_called()
+
+
+def test_sends_notification_when_transactions_parsed():
+    from spend_tracking.worker.services.process_email import ProcessEmail
+
+    storage = MagicMock()
+    repository = MagicMock()
+    transaction_repository = MagicMock()
+    notification_sender = MagicMock()
+
+    html = """<html><body>
+    <table><tr><td>消費彙整通知</td></tr>
+    <tr><td>通知日期：2026/02/20</td></tr>
+    <tr><td>卡號後4碼： 6903</td></tr></table>
+    <table><tbody>
+    <tr><td>卡別</td><td>行動卡號後4碼</td><td>授權日期</td><td>授權時間</td><td>消費地區</td></tr>
+    <tr><td>正卡</td><td>4623</td><td>2026/02/19</td><td>15:40</td><td>TW</td></tr>
+    <tr><td>消費金額</td><td>商店名稱</td><td>消費類別</td><td>備註</td></tr>
+    <tr><td colspan="2">NT$330</td><td>Test Store</td>
+    <td>線上繳費</td><td>&nbsp;</td></tr>
+    </tbody></table>
+    </body></html>"""
+
+    storage.get_email_raw.return_value = _make_multipart_email(body_html=html)
+
+    from datetime import UTC, datetime
+
+    from spend_tracking.shared.domain.models import RegisteredAddress
+
+    registered = RegisteredAddress(
+        id=1,
+        address="cathay-cc@mail.david74.dev",
+        prefix="cathay-cc",
+        label="Cathay CC",
+        is_active=True,
+        created_at=datetime.now(UTC),
+        line_recipient_id="U1234567890",
+    )
+    repository.get_registered_address.return_value = registered
+
+    service = ProcessEmail(
+        storage, repository, transaction_repository, notification_sender
+    )
+    service.execute(
+        s3_key="cathay-key",
+        address="cathay-cc@mail.david74.dev",
+        sender="service@cathaybk.com.tw",
+        received_at="2026-02-20T06:23:16+00:00",
+    )
+
+    notification_sender.send_transaction_notification.assert_called_once()
+    call_kwargs = notification_sender.send_transaction_notification.call_args
+    assert call_kwargs[1]["recipient_id"] == "U1234567890"
+    assert call_kwargs[1]["bank"] == "cathay"
+    assert len(call_kwargs[1]["transactions"]) == 1
+
+
+def test_no_notification_when_no_transactions():
+    from spend_tracking.worker.services.process_email import ProcessEmail
+
+    storage = MagicMock()
+    repository = MagicMock()
+    transaction_repository = MagicMock()
+    notification_sender = MagicMock()
+
+    storage.get_email_raw.return_value = _make_plain_email()
+
+    service = ProcessEmail(
+        storage, repository, transaction_repository, notification_sender
+    )
+    service.execute(
+        s3_key="other-key",
+        address="unknown@mail.david74.dev",
+        sender="noreply@other.com",
+        received_at="2026-02-21T10:00:00+00:00",
+    )
+
+    notification_sender.send_transaction_notification.assert_not_called()
+
+
+def test_no_notification_when_no_line_recipient():
+    from spend_tracking.worker.services.process_email import ProcessEmail
+
+    storage = MagicMock()
+    repository = MagicMock()
+    transaction_repository = MagicMock()
+    notification_sender = MagicMock()
+
+    html = """<html><body>
+    <table><tr><td>消費彙整通知</td></tr>
+    <tr><td>通知日期：2026/02/20</td></tr>
+    <tr><td>卡號後4碼： 6903</td></tr></table>
+    <table><tbody>
+    <tr><td>卡別</td><td>行動卡號後4碼</td><td>授權日期</td><td>授權時間</td><td>消費地區</td></tr>
+    <tr><td>正卡</td><td>4623</td><td>2026/02/19</td><td>15:40</td><td>TW</td></tr>
+    <tr><td>消費金額</td><td>商店名稱</td><td>消費類別</td><td>備註</td></tr>
+    <tr><td colspan="2">NT$330</td><td>Test Store</td>
+    <td>線上繳費</td><td>&nbsp;</td></tr>
+    </tbody></table>
+    </body></html>"""
+
+    storage.get_email_raw.return_value = _make_multipart_email(body_html=html)
+
+    from datetime import UTC, datetime
+
+    from spend_tracking.shared.domain.models import RegisteredAddress
+
+    registered = RegisteredAddress(
+        id=1,
+        address="cathay-cc@mail.david74.dev",
+        prefix="cathay-cc",
+        label="Cathay CC",
+        is_active=True,
+        created_at=datetime.now(UTC),
+        line_recipient_id=None,
+    )
+    repository.get_registered_address.return_value = registered
+
+    service = ProcessEmail(
+        storage, repository, transaction_repository, notification_sender
+    )
+    service.execute(
+        s3_key="cathay-key",
+        address="cathay-cc@mail.david74.dev",
+        sender="service@cathaybk.com.tw",
+        received_at="2026-02-20T06:23:16+00:00",
+    )
+
+    notification_sender.send_transaction_notification.assert_not_called()
+
+
+def test_notification_failure_does_not_block_processing():
+    from spend_tracking.worker.services.process_email import ProcessEmail
+
+    storage = MagicMock()
+    repository = MagicMock()
+    transaction_repository = MagicMock()
+    notification_sender = MagicMock()
+
+    html = """<html><body>
+    <table><tr><td>消費彙整通知</td></tr>
+    <tr><td>通知日期：2026/02/20</td></tr>
+    <tr><td>卡號後4碼： 6903</td></tr></table>
+    <table><tbody>
+    <tr><td>卡別</td><td>行動卡號後4碼</td><td>授權日期</td><td>授權時間</td><td>消費地區</td></tr>
+    <tr><td>正卡</td><td>4623</td><td>2026/02/19</td><td>15:40</td><td>TW</td></tr>
+    <tr><td>消費金額</td><td>商店名稱</td><td>消費類別</td><td>備註</td></tr>
+    <tr><td colspan="2">NT$330</td><td>Test Store</td>
+    <td>線上繳費</td><td>&nbsp;</td></tr>
+    </tbody></table>
+    </body></html>"""
+
+    storage.get_email_raw.return_value = _make_multipart_email(body_html=html)
+
+    from datetime import UTC, datetime
+
+    from spend_tracking.shared.domain.models import RegisteredAddress
+
+    registered = RegisteredAddress(
+        id=1,
+        address="cathay-cc@mail.david74.dev",
+        prefix="cathay-cc",
+        label="Cathay CC",
+        is_active=True,
+        created_at=datetime.now(UTC),
+        line_recipient_id="U1234567890",
+    )
+    repository.get_registered_address.return_value = registered
+
+    notification_sender.send_transaction_notification.side_effect = Exception("boom")
+
+    service = ProcessEmail(
+        storage, repository, transaction_repository, notification_sender
+    )
+    service.execute(
+        s3_key="cathay-key",
+        address="cathay-cc@mail.david74.dev",
+        sender="service@cathaybk.com.tw",
+        received_at="2026-02-20T06:23:16+00:00",
+    )
+
+    repository.save_email.assert_called_once()
+    transaction_repository.save_transactions.assert_called_once()
