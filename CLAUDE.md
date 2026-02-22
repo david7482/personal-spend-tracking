@@ -6,6 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - Always run `make ci` and fix all issues before pushing commits.
 - Never commit directly on master. Always create a feature branch first.
+- PRs must be merged via rebase (`gh pr merge --rebase`). Squash and merge commits are disabled.
 
 ## Build & Development Commands
 
