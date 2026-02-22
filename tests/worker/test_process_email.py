@@ -63,7 +63,6 @@ def test_processes_multipart_email():
     saved = repository.save_email.call_args[0][0]
     assert saved.subject == "Test Subject"
     assert saved.body_text == "Plain text body"
-    assert saved.body_html == "<p>HTML body</p>"
     assert saved.raw_s3_key == "some-key"
     assert saved.address == "bank-abc@mail.david74.dev"
     assert saved.parsed_data is None
@@ -88,7 +87,6 @@ def test_processes_plain_text_only_email():
 
     saved = repository.save_email.call_args[0][0]
     assert saved.body_text == "Just plain text\r\n"
-    assert saved.body_html is None
     assert saved.subject == "Plain Email"
 
 

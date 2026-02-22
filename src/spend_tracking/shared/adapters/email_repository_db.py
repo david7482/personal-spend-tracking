@@ -41,15 +41,14 @@ class DbEmailRepository(EmailRepository):
         with psycopg2.connect(self._connection_string) as conn, conn.cursor() as cur:
             cur.execute(
                 "INSERT INTO emails "
-                "(address, sender, subject, body_html, body_text, "
+                "(address, sender, subject, body_text, "
                 "raw_s3_key, received_at, parsed_data, created_at) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) "
                 "RETURNING id",
                 (
                     email.address,
                     email.sender,
                     email.subject,
-                    email.body_html,
                     email.body_text,
                     email.raw_s3_key,
                     email.received_at,
