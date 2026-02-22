@@ -11,7 +11,7 @@ class RegisteredAddress:
     label: str | None
     is_active: bool
     created_at: datetime
-    line_recipient_id: str | None
+    line_recipient_id: str | None = None
 
 
 @dataclass
