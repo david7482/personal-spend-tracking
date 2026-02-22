@@ -8,7 +8,7 @@ def _make_transaction(
     merchant: str | None = "Test Store",
     amount: Decimal = Decimal("1250"),
     currency: str = "TWD",
-    category: str | None = "餐飲",
+    category: str | None = "Food",
     transaction_at: datetime | None = None,
 ) -> Transaction:
     return Transaction(
@@ -39,7 +39,7 @@ def test_build_flex_message_single_transaction():
 
     # Header: bank name + transaction count
     header_texts = [c["text"] for c in result["header"]["contents"]]
-    assert "🏦 cathay" in header_texts[0]
+    assert header_texts[0] == "cathay"
     assert "1" in header_texts[1]
 
     # Body: one transaction row
@@ -63,10 +63,10 @@ def test_build_flex_message_multiple_transactions():
     from spend_tracking.worker.services.flex_message import build_flex_message
 
     txns = [
-        _make_transaction(merchant="星巴克", amount=Decimal("1250"), category="餐飲"),
         _make_transaction(
-            merchant="全聯福利中心", amount=Decimal("3500"), category="購物"
+            merchant="Starbucks", amount=Decimal("1250"), category="Food"
         ),
+        _make_transaction(merchant="IKEA", amount=Decimal("3500"), category="Shopping"),
     ]
     result = build_flex_message("cathay", txns)
 
@@ -91,7 +91,7 @@ def test_build_flex_message_nil_merchant_and_category():
 
     row = result["body"]["contents"][0]
     merchant_text = row["contents"][0]["contents"][0]["text"]
-    assert merchant_text == "—"
+    assert merchant_text == "-"
 
     metadata_text = row["contents"][0]["contents"][1]["text"]
     # Should still have the date, no category prefix
