@@ -82,7 +82,10 @@ resource "aws_iam_role_policy" "worker" {
       {
         Effect   = "Allow"
         Action   = ["ssm:GetParameter"]
-        Resource = aws_ssm_parameter.db_connection_string.arn
+        Resource = [
+          aws_ssm_parameter.db_connection_string.arn,
+          aws_ssm_parameter.line_channel_access_token.arn
+        ]
       },
       {
         Effect = "Allow"
