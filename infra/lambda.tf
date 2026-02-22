@@ -55,8 +55,9 @@ resource "aws_lambda_function" "worker" {
 
   environment {
     variables = {
-      S3_BUCKET               = aws_s3_bucket.raw_emails.id
-      SSM_DB_CONNECTION_STRING = aws_ssm_parameter.db_connection_string.name
+      S3_BUCKET                     = aws_s3_bucket.raw_emails.id
+      SSM_DB_CONNECTION_STRING       = aws_ssm_parameter.db_connection_string.name
+      SSM_LINE_CHANNEL_ACCESS_TOKEN  = aws_ssm_parameter.line_channel_access_token.name
     }
   }
 
