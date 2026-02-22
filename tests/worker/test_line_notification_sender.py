@@ -7,7 +7,7 @@ from spend_tracking.shared.domain.models import Transaction
 
 
 def _make_transaction(
-    merchant: str = "星巴克",
+    merchant: str = "Starbucks",
     amount: Decimal = Decimal("1250"),
 ) -> Transaction:
     return Transaction(
@@ -20,7 +20,7 @@ def _make_transaction(
         amount=amount,
         currency="TWD",
         merchant=merchant,
-        category="餐飲",
+        category="Food",
         notes=None,
         raw_data=None,
         created_at=datetime(2026, 2, 22, 15, 40, tzinfo=UTC),

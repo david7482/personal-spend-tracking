@@ -24,7 +24,7 @@ class LineNotificationSender(NotificationSender):
         try:
             flex_contents = build_flex_message(bank, transactions)
             count = len(transactions)
-            alt_text = f"\U0001f3e6 {bank} \u2014 {count} \u7b46\u4ea4\u6613"
+            alt_text = f"{bank} - {count} transactions"
 
             payload = {
                 "to": recipient_id,

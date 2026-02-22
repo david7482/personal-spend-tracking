@@ -6,7 +6,7 @@ from spend_tracking.shared.domain.models import Transaction
 _CURRENCY_SYMBOLS: dict[str, str] = {
     "TWD": "NT$",
     "USD": "US$",
-    "JPY": "¥",
+    "JPY": "JPY ",
 }
 
 
@@ -37,14 +37,14 @@ def _build_header(bank: str, count: int, date_str: str) -> dict[str, Any]:
         "contents": [
             {
                 "type": "text",
-                "text": f"\U0001f3e6 {bank}",
+                "text": bank,
                 "weight": "bold",
                 "size": "lg",
                 "color": "#FFFFFF",
             },
             {
                 "type": "text",
-                "text": f"\U0001f4b3 {count} \u7b46\u4ea4\u6613 \u00b7 {date_str}",
+                "text": f"{count} transactions - {date_str}",
                 "size": "xs",
                 "color": "#FFFFFFAA",
                 "margin": "sm",
@@ -75,9 +75,9 @@ def _build_body(
 
 
 def _build_transaction_row(txn: Transaction) -> dict[str, Any]:
-    merchant = txn.merchant or "\u2014"
+    merchant = txn.merchant or "-"
     date_str = txn.transaction_at.strftime("%m/%d")
-    metadata = f"{txn.category} \u00b7 {date_str}" if txn.category else date_str
+    metadata = f"{txn.category} - {date_str}" if txn.category else date_str
 
     return {
         "type": "box",
@@ -125,7 +125,7 @@ def _build_footer(currency: str, total: Decimal) -> dict[str, Any]:
         "contents": [
             {
                 "type": "text",
-                "text": "\u5408\u8a08",
+                "text": "Total",
                 "size": "sm",
                 "color": "#8C8C8C",
                 "gravity": "center",
