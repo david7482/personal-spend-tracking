@@ -128,3 +128,44 @@ def test_checks_delivered_to_header():
     assert result is True
     msg = queue.send_message.call_args[0][0]
     assert msg["address"] == target_addr
+
+
+def test_checks_x_forwarded_to_header():
+    from spend_tracking.router.services.validate_and_enqueue import ValidateAndEnqueue
+    from spend_tracking.shared.domain.models import RegisteredAddress
+
+    storage = MagicMock()
+    repository = MagicMock()
+    queue = MagicMock()
+
+    target_addr = "bank-abc123@mail.david74.dev"
+    raw = (
+        "From: sender@example.com\r\n"
+        "To: david74.chou@gmail.com\r\n"
+        f"X-Forwarded-To: {target_addr}\r\n"
+        "Subject: Test\r\n"
+        "Date: Sat, 21 Feb 2026 10:00:00 +0000\r\n"
+        "\r\n"
+    ).encode()
+    storage.get_email_headers.return_value = raw
+
+    def lookup(addr):
+        if addr == target_addr:
+            return RegisteredAddress(
+                id=4,
+                address=target_addr,
+                prefix="bank",
+                label="Test",
+                is_active=True,
+                created_at=datetime(2026, 1, 1, tzinfo=UTC),
+            )
+        return None
+
+    repository.get_registered_address.side_effect = lookup
+
+    service = ValidateAndEnqueue(storage, repository, queue)
+    result = service.execute("s3-key")
+
+    assert result is True
+    msg = queue.send_message.call_args[0][0]
+    assert msg["address"] == target_addr

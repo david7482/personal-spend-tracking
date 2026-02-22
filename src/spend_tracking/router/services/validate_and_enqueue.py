@@ -29,7 +29,8 @@ class ValidateAndEnqueue:
 
         to_values = headers.get_all("To", [])
         delivered_to = headers.get_all("Delivered-To", [])
-        all_recipients = getaddresses(to_values + delivered_to)
+        forwarded_to = headers.get_all("X-Forwarded-To", [])
+        all_recipients = getaddresses(to_values + delivered_to + forwarded_to)
 
         for _, addr in all_recipients:
             registered = self._repository.get_registered_address(addr)
