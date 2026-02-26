@@ -38,7 +38,14 @@ disallow_untyped_defs = true
 check_untyped_defs = true
 
 [[tool.mypy.overrides]]
-module = "spend_tracking.*_test"
+module = [
+    "spend_tracking.domains.models_test",
+    "spend_tracking.adapters.notification_sender_line_test",
+    "spend_tracking.lambdas.services.validate_and_enqueue_test",
+    "spend_tracking.lambdas.services.process_email_test",
+    "spend_tracking.lambdas.services.flex_message_test",
+    "spend_tracking.lambdas.services.parsers.cathay_test",
+]
 disallow_untyped_defs = false
 
 [build-system]

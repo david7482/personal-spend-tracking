@@ -15,8 +15,8 @@ def _make_raw_headers(
 
 
 def test_enqueues_for_active_registered_address():
-    from spend_tracking.lambdas.services.validate_and_enqueue import ValidateAndEnqueue
     from spend_tracking.domains.models import RegisteredAddress
+    from spend_tracking.lambdas.services.validate_and_enqueue import ValidateAndEnqueue
 
     storage = MagicMock()
     repository = MagicMock()
@@ -64,8 +64,8 @@ def test_skips_unregistered_address():
 
 
 def test_skips_inactive_address():
-    from spend_tracking.lambdas.services.validate_and_enqueue import ValidateAndEnqueue
     from spend_tracking.domains.models import RegisteredAddress
+    from spend_tracking.lambdas.services.validate_and_enqueue import ValidateAndEnqueue
 
     storage = MagicMock()
     repository = MagicMock()
@@ -90,8 +90,8 @@ def test_skips_inactive_address():
 
 
 def test_checks_delivered_to_header():
-    from spend_tracking.lambdas.services.validate_and_enqueue import ValidateAndEnqueue
     from spend_tracking.domains.models import RegisteredAddress
+    from spend_tracking.lambdas.services.validate_and_enqueue import ValidateAndEnqueue
 
     storage = MagicMock()
     repository = MagicMock()
@@ -131,8 +131,8 @@ def test_checks_delivered_to_header():
 
 
 def test_checks_x_forwarded_to_header():
-    from spend_tracking.lambdas.services.validate_and_enqueue import ValidateAndEnqueue
     from spend_tracking.domains.models import RegisteredAddress
+    from spend_tracking.lambdas.services.validate_and_enqueue import ValidateAndEnqueue
 
     storage = MagicMock()
     repository = MagicMock()
