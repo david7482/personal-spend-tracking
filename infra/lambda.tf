@@ -111,6 +111,13 @@ resource "aws_lambda_function_url" "line_webhook_router" {
   authorization_type = "NONE"
 }
 
+resource "aws_lambda_permission" "line_webhook_router_public_url" {
+  statement_id  = "FunctionURLAllowPublicInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.line_webhook_router.function_name
+  principal     = "*"
+}
+
 resource "aws_lambda_function" "line_message_worker" {
   function_name = "${var.project_name}-line-message-worker"
   role          = aws_iam_role.lambda.arn
