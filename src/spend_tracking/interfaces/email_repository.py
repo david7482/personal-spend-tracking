@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from spend_tracking.shared.domain.models import Email, RegisteredAddress
+from spend_tracking.domains.models import Email, RegisteredAddress
 
 
 class EmailRepository(ABC):

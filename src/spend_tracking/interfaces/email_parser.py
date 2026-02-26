@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from spend_tracking.shared.domain.models import Transaction
+from spend_tracking.domains.models import Transaction
 
 
 @dataclass

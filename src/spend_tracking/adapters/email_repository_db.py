@@ -3,8 +3,8 @@ import json
 import boto3
 import psycopg2
 
-from spend_tracking.shared.domain.models import Email, RegisteredAddress
-from spend_tracking.shared.interfaces.email_repository import EmailRepository
+from spend_tracking.domains.models import Email, RegisteredAddress
+from spend_tracking.interfaces.email_repository import EmailRepository
 
 
 class DbEmailRepository(EmailRepository):

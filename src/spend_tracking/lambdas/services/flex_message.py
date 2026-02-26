@@ -1,7 +1,7 @@
 from decimal import Decimal
 from typing import Any
 
-from spend_tracking.shared.domain.models import Transaction
+from spend_tracking.domains.models import Transaction
 
 _CURRENCY_SYMBOLS: dict[str, str] = {
     "TWD": "NT$",

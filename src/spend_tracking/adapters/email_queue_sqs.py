@@ -2,7 +2,7 @@ import json
 
 import boto3
 
-from spend_tracking.shared.interfaces.email_queue import EmailQueue
+from spend_tracking.interfaces.email_queue import EmailQueue
 
 
 class SQSEmailQueue(EmailQueue):

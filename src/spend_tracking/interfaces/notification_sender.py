@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from spend_tracking.shared.domain.models import Transaction
+from spend_tracking.domains.models import Transaction
 
 
 class NotificationSender(ABC):
