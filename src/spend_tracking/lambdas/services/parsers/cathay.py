@@ -3,8 +3,8 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from html.parser import HTMLParser
 
-from spend_tracking.shared.domain.models import Transaction
-from spend_tracking.shared.interfaces.email_parser import EmailParser, ParseResult
+from spend_tracking.domains.models import Transaction
+from spend_tracking.interfaces.email_parser import EmailParser, ParseResult
 
 TAIPEI_TZ = timezone(timedelta(hours=8))
 CATHAY_ADDRESS_PREFIX = "cathay-"

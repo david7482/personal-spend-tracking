@@ -1,6 +1,6 @@
 import boto3
 
-from spend_tracking.shared.interfaces.email_storage import EmailStorage
+from spend_tracking.interfaces.email_storage import EmailStorage
 
 
 class S3EmailStorage(EmailStorage):

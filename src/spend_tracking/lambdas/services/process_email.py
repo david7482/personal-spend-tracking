@@ -4,14 +4,14 @@ from email import message_from_bytes
 from email.header import decode_header
 from email.message import Message
 
-from spend_tracking.shared.domain.models import Email, Transaction
-from spend_tracking.shared.interfaces.email_repository import EmailRepository
-from spend_tracking.shared.interfaces.email_storage import EmailStorage
-from spend_tracking.shared.interfaces.notification_sender import NotificationSender
-from spend_tracking.shared.interfaces.transaction_repository import (
+from spend_tracking.domains.models import Email, Transaction
+from spend_tracking.interfaces.email_repository import EmailRepository
+from spend_tracking.interfaces.email_storage import EmailStorage
+from spend_tracking.interfaces.notification_sender import NotificationSender
+from spend_tracking.interfaces.transaction_repository import (
     TransactionRepository,
 )
-from spend_tracking.worker.services.parsers import find_parser
+from spend_tracking.lambdas.services.parsers import find_parser
 
 logger = logging.getLogger(__name__)
 

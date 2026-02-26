@@ -3,8 +3,8 @@ import json
 import boto3
 import psycopg2
 
-from spend_tracking.shared.domain.models import Transaction
-from spend_tracking.shared.interfaces.transaction_repository import (
+from spend_tracking.domains.models import Transaction
+from spend_tracking.interfaces.transaction_repository import (
     TransactionRepository,
 )
 

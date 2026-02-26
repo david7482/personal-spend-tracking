@@ -3,9 +3,9 @@ from datetime import UTC
 from email.parser import BytesHeaderParser
 from email.utils import getaddresses, parsedate_to_datetime
 
-from spend_tracking.shared.interfaces.email_queue import EmailQueue
-from spend_tracking.shared.interfaces.email_repository import EmailRepository
-from spend_tracking.shared.interfaces.email_storage import EmailStorage
+from spend_tracking.interfaces.email_queue import EmailQueue
+from spend_tracking.interfaces.email_repository import EmailRepository
+from spend_tracking.interfaces.email_storage import EmailStorage
 
 logger = logging.getLogger(__name__)
 

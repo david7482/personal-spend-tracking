@@ -1,5 +1,5 @@
-from spend_tracking.shared.interfaces.email_parser import EmailParser
-from spend_tracking.worker.services.parsers.cathay import CathayParser
+from spend_tracking.interfaces.email_parser import EmailParser
+from spend_tracking.lambdas.services.parsers.cathay import CathayParser
 
 _PARSERS: list[EmailParser] = [
     CathayParser(),

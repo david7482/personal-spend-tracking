@@ -2,9 +2,9 @@ import json
 import logging
 from urllib.request import Request, urlopen
 
-from spend_tracking.shared.domain.models import Transaction
-from spend_tracking.shared.interfaces.notification_sender import NotificationSender
-from spend_tracking.worker.services.flex_message import build_flex_message
+from spend_tracking.domains.models import Transaction
+from spend_tracking.interfaces.notification_sender import NotificationSender
+from spend_tracking.lambdas.services.flex_message import build_flex_message
 
 logger = logging.getLogger(__name__)
 
