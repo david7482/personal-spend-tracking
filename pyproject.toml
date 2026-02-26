@@ -46,6 +46,7 @@ module = [
     "spend_tracking.lambdas.services.flex_message_test",
     "spend_tracking.lambdas.services.parsers.cathay_test",
     "spend_tracking.adapters.line_message_repository_db_test",
+    "spend_tracking.lambdas.services.receive_line_webhook_test",
 ]
 disallow_untyped_defs = false
 
