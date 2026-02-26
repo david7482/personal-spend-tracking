@@ -1,39 +1,44 @@
-.PHONY: build build-router build-worker deploy deploy-router deploy-worker clean test migrate migrate-new lint lint-fix format-check format typecheck ci
+.PHONY: build deploy deploy-email-router deploy-email-worker deploy-line-webhook-router deploy-line-message-worker clean test migrate migrate-new lint lint-fix format-check format typecheck ci
 
 ROUTER_FUNCTION := spend-tracking-router
 WORKER_FUNCTION := spend-tracking-worker
+LINE_WEBHOOK_ROUTER_FUNCTION := spend-tracking-line-webhook-router
+LINE_MESSAGE_WORKER_FUNCTION := spend-tracking-line-message-worker
 BUILD_DIR := .build
 AWS_REGION := us-east-1
 
-build: build-router build-worker
+build:
+	rm -rf $(BUILD_DIR)/lambda
+	mkdir -p $(BUILD_DIR)/lambda
+	pip install --no-deps -t $(BUILD_DIR)/lambda/ --quiet --platform manylinux2014_x86_64 --python-version 3.12 --only-binary=:all: psycopg2-binary
+	cp -r src/spend_tracking $(BUILD_DIR)/lambda/
+	cd $(BUILD_DIR)/lambda && zip -r ../lambda.zip . -x "*.pyc" "__pycache__/*"
 
-build-router:
-	rm -rf $(BUILD_DIR)/router
-	mkdir -p $(BUILD_DIR)/router
-	pip install --no-deps -t $(BUILD_DIR)/router/ --quiet --platform manylinux2014_x86_64 --python-version 3.12 --only-binary=:all: psycopg2-binary
-	cp -r src/spend_tracking $(BUILD_DIR)/router/
-	cd $(BUILD_DIR)/router && zip -r ../router.zip . -x "*.pyc" "__pycache__/*"
-
-build-worker:
-	rm -rf $(BUILD_DIR)/worker
-	mkdir -p $(BUILD_DIR)/worker
-	pip install --no-deps -t $(BUILD_DIR)/worker/ --quiet --platform manylinux2014_x86_64 --python-version 3.12 --only-binary=:all: psycopg2-binary
-	cp -r src/spend_tracking $(BUILD_DIR)/worker/
-	cd $(BUILD_DIR)/worker && zip -r ../worker.zip . -x "*.pyc" "__pycache__/*"
-
-deploy-router: build-router
+deploy-email-router: build
 	aws lambda update-function-code \
 		--function-name $(ROUTER_FUNCTION) \
-		--zip-file fileb://$(BUILD_DIR)/router.zip \
+		--zip-file fileb://$(BUILD_DIR)/lambda.zip \
 		--region $(AWS_REGION)
 
-deploy-worker: build-worker
+deploy-email-worker: build
 	aws lambda update-function-code \
 		--function-name $(WORKER_FUNCTION) \
-		--zip-file fileb://$(BUILD_DIR)/worker.zip \
+		--zip-file fileb://$(BUILD_DIR)/lambda.zip \
 		--region $(AWS_REGION)
 
-deploy: deploy-router deploy-worker
+deploy-line-webhook-router: build
+	aws lambda update-function-code \
+		--function-name $(LINE_WEBHOOK_ROUTER_FUNCTION) \
+		--zip-file fileb://$(BUILD_DIR)/lambda.zip \
+		--region $(AWS_REGION)
+
+deploy-line-message-worker: build
+	aws lambda update-function-code \
+		--function-name $(LINE_MESSAGE_WORKER_FUNCTION) \
+		--zip-file fileb://$(BUILD_DIR)/lambda.zip \
+		--region $(AWS_REGION)
+
+deploy: deploy-email-router deploy-email-worker deploy-line-webhook-router deploy-line-message-worker
 
 clean:
 	rm -rf $(BUILD_DIR)
