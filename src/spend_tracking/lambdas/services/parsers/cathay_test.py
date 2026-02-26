@@ -55,7 +55,7 @@ CATHAY_HTML_FIXTURE = """
 
 
 def test_can_parse_matches_cathay_address():
-    from spend_tracking.worker.services.parsers.cathay import CathayParser
+    from spend_tracking.lambdas.services.parsers.cathay import CathayParser
 
     parser = CathayParser()
     assert (
@@ -65,14 +65,14 @@ def test_can_parse_matches_cathay_address():
 
 
 def test_can_parse_rejects_other_address():
-    from spend_tracking.worker.services.parsers.cathay import CathayParser
+    from spend_tracking.lambdas.services.parsers.cathay import CathayParser
 
     parser = CathayParser()
     assert parser.can_parse("ctbc-cc@mail.david74.dev", "something") is False
 
 
 def test_parses_two_transactions():
-    from spend_tracking.worker.services.parsers.cathay import CathayParser
+    from spend_tracking.lambdas.services.parsers.cathay import CathayParser
 
     parser = CathayParser()
     metadata = {"received_at": "2026-02-20T06:23:16+00:00"}
@@ -98,7 +98,7 @@ def test_parses_two_transactions():
 
 
 def test_parsed_data_has_email_metadata():
-    from spend_tracking.worker.services.parsers.cathay import CathayParser
+    from spend_tracking.lambdas.services.parsers.cathay import CathayParser
 
     parser = CathayParser()
     metadata = {"received_at": "2026-02-20T06:23:16+00:00"}
@@ -112,7 +112,7 @@ def test_parsed_data_has_email_metadata():
 
 
 def test_parses_transaction_with_empty_mobile_card():
-    from spend_tracking.worker.services.parsers.cathay import CathayParser
+    from spend_tracking.lambdas.services.parsers.cathay import CathayParser
 
     html = """
     <html><body>
@@ -152,7 +152,7 @@ def test_parses_transaction_with_empty_mobile_card():
 
 
 def test_malformed_html_returns_empty_result():
-    from spend_tracking.worker.services.parsers.cathay import CathayParser
+    from spend_tracking.lambdas.services.parsers.cathay import CathayParser
 
     parser = CathayParser()
     metadata = {"received_at": "2026-02-20T06:23:16+00:00"}

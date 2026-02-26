@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 
 
 def test_registered_address_creation():
-    from spend_tracking.shared.domain.models import RegisteredAddress
+    from spend_tracking.domains.models import RegisteredAddress
 
     addr = RegisteredAddress(
         id=1,
@@ -20,7 +20,7 @@ def test_registered_address_creation():
 
 
 def test_registered_address_optional_label():
-    from spend_tracking.shared.domain.models import RegisteredAddress
+    from spend_tracking.domains.models import RegisteredAddress
 
     addr = RegisteredAddress(
         id=2,
@@ -34,7 +34,7 @@ def test_registered_address_optional_label():
 
 
 def test_email_creation():
-    from spend_tracking.shared.domain.models import Email
+    from spend_tracking.domains.models import Email
 
     email = Email(
         id=42,
@@ -53,7 +53,7 @@ def test_email_creation():
 
 
 def test_email_with_parsed_data():
-    from spend_tracking.shared.domain.models import Email
+    from spend_tracking.domains.models import Email
 
     parsed = {"type": "credit_card_statement", "amount": 12345}
     email = Email(
@@ -76,7 +76,7 @@ def test_transaction_creation():
     from datetime import datetime
     from decimal import Decimal
 
-    from spend_tracking.shared.domain.models import Transaction
+    from spend_tracking.domains.models import Transaction
 
     txn = Transaction(
         id=None,

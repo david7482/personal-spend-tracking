@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from spend_tracking.shared.domain.models import Transaction
+from spend_tracking.domains.models import Transaction
 
 
 def _make_transaction(
@@ -29,7 +29,7 @@ def _make_transaction(
 
 
 def test_build_flex_message_single_transaction():
-    from spend_tracking.worker.services.flex_message import build_flex_message
+    from spend_tracking.lambdas.services.flex_message import build_flex_message
 
     txn = _make_transaction()
     result = build_flex_message("cathay", [txn])
@@ -60,7 +60,7 @@ def test_build_flex_message_single_transaction():
 
 
 def test_build_flex_message_multiple_transactions():
-    from spend_tracking.worker.services.flex_message import build_flex_message
+    from spend_tracking.lambdas.services.flex_message import build_flex_message
 
     txns = [
         _make_transaction(
@@ -84,7 +84,7 @@ def test_build_flex_message_multiple_transactions():
 
 
 def test_build_flex_message_nil_merchant_and_category():
-    from spend_tracking.worker.services.flex_message import build_flex_message
+    from spend_tracking.lambdas.services.flex_message import build_flex_message
 
     txn = _make_transaction(merchant=None, category=None)
     result = build_flex_message("cathay", [txn])
@@ -99,7 +99,7 @@ def test_build_flex_message_nil_merchant_and_category():
 
 
 def test_build_flex_message_formats_amount_with_commas():
-    from spend_tracking.worker.services.flex_message import build_flex_message
+    from spend_tracking.lambdas.services.flex_message import build_flex_message
 
     txn = _make_transaction(amount=Decimal("12345678"))
     result = build_flex_message("cathay", [txn])
