@@ -732,7 +732,100 @@ git commit -m "feat: add LINE webhook router and message worker handler entry po
 
 ---
 
-### Task 9: Database Migration
+### Task 9: Handler Tests
+
+**Files:**
+- Create: `src/spend_tracking/lambdas/handler_test.py`
+- Modify: `pyproject.toml` (add mypy override for test file)
+
+**Step 1: Write the failing tests**
+
+Create `src/spend_tracking/lambdas/handler_test.py`:
+
+```python
+import json
+from unittest.mock import MagicMock, patch
+
+
+@patch("spend_tracking.lambdas.handler._receive_line_webhook_service")
+def test_line_webhook_router_handler_delegates_to_service(mock_service):
+    from spend_tracking.lambdas.handler import line_webhook_router_handler
+
+    mock_service.execute.return_value = {"statusCode": 200, "body": "OK"}
+
+    event = {
+        "headers": {"x-line-signature": "test-signature"},
+        "body": '{"events": []}',
+    }
+    result = line_webhook_router_handler(event, None)
+
+    assert result["statusCode"] == 200
+    mock_service.execute.assert_called_once_with('{"events": []}', "test-signature")
+
+
+@patch("spend_tracking.lambdas.handler._receive_line_webhook_service")
+def test_line_webhook_router_handler_returns_401_on_bad_signature(mock_service):
+    from spend_tracking.lambdas.handler import line_webhook_router_handler
+
+    mock_service.execute.return_value = {"statusCode": 401, "body": "Invalid signature"}
+
+    event = {
+        "headers": {"x-line-signature": "bad-sig"},
+        "body": "{}",
+    }
+    result = line_webhook_router_handler(event, None)
+
+    assert result["statusCode"] == 401
+
+
+@patch("spend_tracking.lambdas.handler._process_line_message_service")
+def test_line_message_worker_handler_processes_each_record(mock_service):
+    from spend_tracking.lambdas.handler import line_message_worker_handler
+
+    event = {
+        "Records": [
+            {"body": json.dumps({"line_message_id": 42})},
+            {"body": json.dumps({"line_message_id": 99})},
+        ]
+    }
+    line_message_worker_handler(event, None)
+
+    assert mock_service.execute.call_count == 2
+    mock_service.execute.assert_any_call(line_message_id=42)
+    mock_service.execute.assert_any_call(line_message_id=99)
+```
+
+**Step 2: Run tests to verify they fail**
+
+Run: `PYTHONPATH=src poetry run pytest src/spend_tracking/lambdas/handler_test.py -v`
+Expected: FAIL (handler entry points or module-level wiring not yet compatible, or `_receive_line_webhook_service` not patchable)
+
+Note: These tests may already pass if Task 8 was implemented correctly. That's fine — the tests still validate the handler behavior.
+
+**Step 3: Add mypy override for test file**
+
+In `pyproject.toml`, add `"spend_tracking.lambdas.handler_test"` to the `[[tool.mypy.overrides]]` module list.
+
+**Step 4: Run tests to verify they pass**
+
+Run: `PYTHONPATH=src poetry run pytest src/spend_tracking/lambdas/handler_test.py -v`
+Expected: All 3 tests PASS
+
+**Step 5: Run full CI**
+
+Run: `make ci`
+Expected: All checks pass
+
+**Step 6: Commit**
+
+```bash
+git add src/spend_tracking/lambdas/handler_test.py pyproject.toml
+git commit -m "test: add handler tests for LINE webhook router and message worker"
+```
+
+---
+
+### Task 10: Database Migration
 
 **Files:**
 - Create: `migrations/versions/005_add_line_messages.py`
@@ -776,7 +869,7 @@ git commit -m "feat: add line_messages table migration"
 
 ---
 
-### Task 10: Makefile — Simplify Build, Rename Deploys
+### Task 11: Makefile — Simplify Build, Rename Deploys
 
 **Files:**
 - Modify: `Makefile`
@@ -850,7 +943,7 @@ git commit -m "refactor: simplify Makefile to single build target, rename deploy
 
 ---
 
-### Task 11: Terraform — Shared IAM Role
+### Task 12: Terraform — Shared IAM Role
 
 **Files:**
 - Modify: `infra/iam.tf`
@@ -936,7 +1029,7 @@ git commit -m "refactor: merge IAM roles into single shared lambda role"
 
 ---
 
-### Task 12: Terraform — SQS, SSM, Lambda, Function URL
+### Task 13: Terraform — SQS, SSM, Lambda, Function URL
 
 **Files:**
 - Modify: `infra/sqs.tf`
@@ -1069,7 +1162,7 @@ git commit -m "feat: add LINE webhook router and message worker infrastructure"
 
 ---
 
-### Task 13: CD Pipeline Update
+### Task 14: CD Pipeline Update
 
 **Files:**
 - Modify: `.github/workflows/cd.yml`
@@ -1086,7 +1179,7 @@ No commit needed for this task.
 
 ---
 
-### Task 14: Final CI Verification
+### Task 15: Final CI Verification
 
 **Step 1: Run full CI**
 
