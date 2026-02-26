@@ -39,7 +39,7 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 test:
-	PYTHONPATH=src poetry run pytest tests/ -v
+	PYTHONPATH=src poetry run pytest src/ -v
 
 migrate:
 	poetry run alembic upgrade head
@@ -48,16 +48,16 @@ migrate-new:
 	poetry run alembic revision -m "$(name)"
 
 lint:
-	poetry run ruff check src/ tests/
+	poetry run ruff check src/
 
 lint-fix:
-	poetry run ruff check --fix src/ tests/
+	poetry run ruff check --fix src/
 
 format-check:
-	poetry run ruff format --check src/ tests/
+	poetry run ruff format --check src/
 
 format:
-	poetry run ruff format src/ tests/
+	poetry run ruff format src/
 
 typecheck:
 	PYTHONPATH=src poetry run mypy

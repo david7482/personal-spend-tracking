@@ -19,11 +19,11 @@ boto3-stubs = {version = "^1.35", extras = ["boto3"]}
 types-psycopg2 = "^2.9"
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["src"]
 
 [tool.ruff]
 target-version = "py312"
-src = ["src", "tests"]
+src = ["src"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "UP", "B", "SIM"]
@@ -31,14 +31,14 @@ select = ["E", "F", "I", "W", "UP", "B", "SIM"]
 [tool.mypy]
 python_version = "3.12"
 mypy_path = "src"
-packages = ["spend_tracking", "tests"]
+packages = ["spend_tracking"]
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 check_untyped_defs = true
 
 [[tool.mypy.overrides]]
-module = "tests.*"
+module = "spend_tracking.*_test"
 disallow_untyped_defs = false
 
 [build-system]
