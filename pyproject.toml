@@ -48,7 +48,8 @@ module = [
     "spend_tracking.adapters.line_message_repository_db_test",
     "spend_tracking.lambdas.services.receive_line_webhook_test",
     "spend_tracking.lambdas.services.process_line_message_test",
-    "spend_tracking.lambdas.handler_test",
+    "spend_tracking.lambdas.line_webhook_router_handler_test",
+    "spend_tracking.lambdas.line_message_worker_handler_test",
 ]
 disallow_untyped_defs = false
 

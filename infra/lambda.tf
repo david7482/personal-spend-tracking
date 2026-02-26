@@ -4,14 +4,14 @@ data "archive_file" "placeholder" {
 
   source {
     content  = "def handler(event, context): pass"
-    filename = "spend_tracking/lambdas/handler.py"
+    filename = "spend_tracking/lambdas/email_router_handler.py"
   }
 }
 
 resource "aws_lambda_function" "router" {
   function_name = "${var.project_name}-router"
   role          = aws_iam_role.lambda.arn
-  handler       = "spend_tracking.lambdas.handler.email_router_handler"
+  handler       = "spend_tracking.lambdas.email_router_handler.handler"
   runtime       = "python3.12"
   timeout       = 30
   memory_size   = 128
@@ -47,7 +47,7 @@ resource "aws_lambda_permission" "allow_s3" {
 resource "aws_lambda_function" "worker" {
   function_name = "${var.project_name}-worker"
   role          = aws_iam_role.lambda.arn
-  handler       = "spend_tracking.lambdas.handler.email_worker_handler"
+  handler       = "spend_tracking.lambdas.email_worker_handler.handler"
   runtime       = "python3.12"
   timeout       = 60
   memory_size   = 256
@@ -81,7 +81,7 @@ resource "aws_lambda_event_source_mapping" "worker_sqs" {
 resource "aws_lambda_function" "line_webhook_router" {
   function_name = "${var.project_name}-line-webhook-router"
   role          = aws_iam_role.lambda.arn
-  handler       = "spend_tracking.lambdas.handler.line_webhook_router_handler"
+  handler       = "spend_tracking.lambdas.line_webhook_router_handler.handler"
   runtime       = "python3.12"
   timeout       = 30
   memory_size   = 128
@@ -114,7 +114,7 @@ resource "aws_lambda_function_url" "line_webhook_router" {
 resource "aws_lambda_function" "line_message_worker" {
   function_name = "${var.project_name}-line-message-worker"
   role          = aws_iam_role.lambda.arn
-  handler       = "spend_tracking.lambdas.handler.line_message_worker_handler"
+  handler       = "spend_tracking.lambdas.line_message_worker_handler.handler"
   runtime       = "python3.12"
   timeout       = 60
   memory_size   = 128
