@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
-from spend_tracking.shared.domain.models import Transaction
+from spend_tracking.domains.models import Transaction
 
 
 def _make_transaction(
@@ -27,9 +27,9 @@ def _make_transaction(
     )
 
 
-@patch("spend_tracking.shared.adapters.notification_sender_line.urlopen")
+@patch("spend_tracking.adapters.notification_sender_line.urlopen")
 def test_sends_push_message_to_line_api(mock_urlopen):
-    from spend_tracking.shared.adapters.notification_sender_line import (
+    from spend_tracking.adapters.notification_sender_line import (
         LineNotificationSender,
     )
 
@@ -60,9 +60,9 @@ def test_sends_push_message_to_line_api(mock_urlopen):
     assert "cathay" in body["messages"][0]["altText"]
 
 
-@patch("spend_tracking.shared.adapters.notification_sender_line.urlopen")
+@patch("spend_tracking.adapters.notification_sender_line.urlopen")
 def test_logs_error_on_http_failure(mock_urlopen, caplog):
-    from spend_tracking.shared.adapters.notification_sender_line import (
+    from spend_tracking.adapters.notification_sender_line import (
         LineNotificationSender,
     )
 

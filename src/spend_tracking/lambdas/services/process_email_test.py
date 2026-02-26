@@ -43,7 +43,7 @@ def _make_plain_email(
 
 
 def test_processes_multipart_email():
-    from spend_tracking.worker.services.process_email import ProcessEmail
+    from spend_tracking.lambdas.services.process_email import ProcessEmail
 
     storage = MagicMock()
     repository = MagicMock()
@@ -69,7 +69,7 @@ def test_processes_multipart_email():
 
 
 def test_processes_plain_text_only_email():
-    from spend_tracking.worker.services.process_email import ProcessEmail
+    from spend_tracking.lambdas.services.process_email import ProcessEmail
 
     storage = MagicMock()
     repository = MagicMock()
@@ -91,7 +91,7 @@ def test_processes_plain_text_only_email():
 
 
 def test_email_has_correct_metadata():
-    from spend_tracking.worker.services.process_email import ProcessEmail
+    from spend_tracking.lambdas.services.process_email import ProcessEmail
 
     storage = MagicMock()
     repository = MagicMock()
@@ -115,7 +115,7 @@ def test_email_has_correct_metadata():
 
 
 def test_decodes_mime_encoded_subject():
-    from spend_tracking.worker.services.process_email import ProcessEmail
+    from spend_tracking.lambdas.services.process_email import ProcessEmail
 
     storage = MagicMock()
     repository = MagicMock()
@@ -137,7 +137,7 @@ def test_decodes_mime_encoded_subject():
 
 
 def test_populates_parsed_data_when_parser_matches():
-    from spend_tracking.worker.services.process_email import ProcessEmail
+    from spend_tracking.lambdas.services.process_email import ProcessEmail
 
     storage = MagicMock()
     repository = MagicMock()
@@ -179,7 +179,7 @@ def test_populates_parsed_data_when_parser_matches():
 
 
 def test_no_parser_match_leaves_parsed_data_none():
-    from spend_tracking.worker.services.process_email import ProcessEmail
+    from spend_tracking.lambdas.services.process_email import ProcessEmail
 
     storage = MagicMock()
     repository = MagicMock()
@@ -201,7 +201,7 @@ def test_no_parser_match_leaves_parsed_data_none():
 
 
 def test_sends_notification_when_transactions_parsed():
-    from spend_tracking.worker.services.process_email import ProcessEmail
+    from spend_tracking.lambdas.services.process_email import ProcessEmail
 
     storage = MagicMock()
     repository = MagicMock()
@@ -225,7 +225,7 @@ def test_sends_notification_when_transactions_parsed():
 
     from datetime import UTC, datetime
 
-    from spend_tracking.shared.domain.models import RegisteredAddress
+    from spend_tracking.domains.models import RegisteredAddress
 
     registered = RegisteredAddress(
         id=1,
@@ -256,7 +256,7 @@ def test_sends_notification_when_transactions_parsed():
 
 
 def test_no_notification_when_no_transactions():
-    from spend_tracking.worker.services.process_email import ProcessEmail
+    from spend_tracking.lambdas.services.process_email import ProcessEmail
 
     storage = MagicMock()
     repository = MagicMock()
@@ -279,7 +279,7 @@ def test_no_notification_when_no_transactions():
 
 
 def test_no_notification_when_no_line_recipient():
-    from spend_tracking.worker.services.process_email import ProcessEmail
+    from spend_tracking.lambdas.services.process_email import ProcessEmail
 
     storage = MagicMock()
     repository = MagicMock()
@@ -303,7 +303,7 @@ def test_no_notification_when_no_line_recipient():
 
     from datetime import UTC, datetime
 
-    from spend_tracking.shared.domain.models import RegisteredAddress
+    from spend_tracking.domains.models import RegisteredAddress
 
     registered = RegisteredAddress(
         id=1,
@@ -330,7 +330,7 @@ def test_no_notification_when_no_line_recipient():
 
 
 def test_notification_failure_does_not_block_processing():
-    from spend_tracking.worker.services.process_email import ProcessEmail
+    from spend_tracking.lambdas.services.process_email import ProcessEmail
 
     storage = MagicMock()
     repository = MagicMock()
@@ -354,7 +354,7 @@ def test_notification_failure_does_not_block_processing():
 
     from datetime import UTC, datetime
 
-    from spend_tracking.shared.domain.models import RegisteredAddress
+    from spend_tracking.domains.models import RegisteredAddress
 
     registered = RegisteredAddress(
         id=1,
