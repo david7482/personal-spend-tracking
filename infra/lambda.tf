@@ -77,3 +77,68 @@ resource "aws_lambda_event_source_mapping" "worker_sqs" {
   function_name    = aws_lambda_function.worker.arn
   batch_size       = 1
 }
+
+resource "aws_lambda_function" "line_webhook_router" {
+  function_name = "${var.project_name}-line-webhook-router"
+  role          = aws_iam_role.lambda.arn
+  handler       = "spend_tracking.lambdas.handler.line_webhook_router_handler"
+  runtime       = "python3.12"
+  timeout       = 30
+  memory_size   = 128
+  filename      = data.archive_file.placeholder.output_path
+
+  environment {
+    variables = {
+      SSM_DB_CONNECTION_STRING   = aws_ssm_parameter.db_connection_string.name
+      SSM_LINE_CHANNEL_SECRET    = aws_ssm_parameter.line_channel_secret.name
+      SQS_LINE_MESSAGE_QUEUE_URL = aws_sqs_queue.line-message-processing.url
+    }
+  }
+
+  logging_config {
+    log_format            = "JSON"
+    application_log_level = "INFO"
+    system_log_level      = "WARN"
+  }
+
+  lifecycle {
+    ignore_changes = [filename, source_code_hash]
+  }
+}
+
+resource "aws_lambda_function_url" "line_webhook_router" {
+  function_name      = aws_lambda_function.line_webhook_router.function_name
+  authorization_type = "NONE"
+}
+
+resource "aws_lambda_function" "line_message_worker" {
+  function_name = "${var.project_name}-line-message-worker"
+  role          = aws_iam_role.lambda.arn
+  handler       = "spend_tracking.lambdas.handler.line_message_worker_handler"
+  runtime       = "python3.12"
+  timeout       = 60
+  memory_size   = 128
+  filename      = data.archive_file.placeholder.output_path
+
+  environment {
+    variables = {
+      SSM_DB_CONNECTION_STRING = aws_ssm_parameter.db_connection_string.name
+    }
+  }
+
+  logging_config {
+    log_format            = "JSON"
+    application_log_level = "INFO"
+    system_log_level      = "WARN"
+  }
+
+  lifecycle {
+    ignore_changes = [filename, source_code_hash]
+  }
+}
+
+resource "aws_lambda_event_source_mapping" "line_message_worker_sqs" {
+  event_source_arn = aws_sqs_queue.line-message-processing.arn
+  function_name    = aws_lambda_function.line_message_worker.arn
+  batch_size       = 1
+}

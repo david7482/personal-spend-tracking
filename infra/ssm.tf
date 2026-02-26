@@ -17,3 +17,13 @@ resource "aws_ssm_parameter" "line_channel_access_token" {
     ignore_changes = [value]
   }
 }
+
+resource "aws_ssm_parameter" "line_channel_secret" {
+  name  = "/${var.project_name}/line-channel-secret"
+  type  = "SecureString"
+  value = "placeholder"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
