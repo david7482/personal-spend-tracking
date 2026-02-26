@@ -12,8 +12,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 make ci                # Full CI: lint, format-check, typecheck, test, build
-make test              # Run all tests (PYTHONPATH=src poetry run pytest tests/ -v)
-make lint              # Ruff check (src/ tests/)
+make test              # Run all tests (PYTHONPATH=src poetry run pytest src/ -v)
+make lint              # Ruff check (src/)
 make lint-fix          # Auto-fix lint issues
 make format            # Auto-format with ruff
 make typecheck         # MyPy strict mode (PYTHONPATH=src poetry run mypy)
@@ -23,8 +23,8 @@ make migrate           # Run Alembic migrations (needs DATABASE_URL)
 make migrate-new name="description"  # Create new migration
 ```
 
-Run a single test file: `PYTHONPATH=src poetry run pytest tests/worker/test_cathay_parser.py -v`
-Run a single test: `PYTHONPATH=src poetry run pytest tests/worker/test_cathay_parser.py::test_name -v`
+Run a single test file: `PYTHONPATH=src poetry run pytest src/spend_tracking/lambdas/services/parsers/cathay_test.py -v`
+Run a single test: `PYTHONPATH=src poetry run pytest src/spend_tracking/lambdas/services/parsers/cathay_test.py::test_name -v`
 
 ## Architecture
 
@@ -32,18 +32,18 @@ Serverless email processing pipeline that receives bank notification emails and 
 
 **Data flow:** Email → SES → S3 (raw) → Router Lambda → SQS → Worker Lambda → PostgreSQL
 
-### Two Lambda functions (Python 3.12):
-- **Router** (`src/spend_tracking/router/`): Triggered by S3 ObjectCreated. Validates recipient against registered addresses in DB, enqueues valid emails to SQS.
-- **Worker** (`src/spend_tracking/worker/`): Triggered by SQS. Parses MIME email, runs bank-specific parser to extract transactions, persists email + transactions to DB.
+### Single `lambdas/` package (Python 3.12) with two handler entry points:
+- **`email_router_handler`**: Triggered by S3 ObjectCreated. Validates recipient against registered addresses in DB, enqueues valid emails to SQS.
+- **`email_worker_handler`**: Triggered by SQS. Parses MIME email, runs bank-specific parser to extract transactions, persists email + transactions to DB.
 
 ### Clean architecture layers:
-- **Domain** (`shared/domain/models.py`): Dataclasses — `RegisteredAddress`, `Email`, `Transaction`
-- **Interfaces** (`shared/interfaces/`): ABCs — `EmailRepository`, `EmailStorage`, `EmailQueue`, `EmailParser`, `TransactionRepository`
-- **Adapters** (`shared/adapters/`): Concrete implementations — S3, SQS, PostgreSQL (psycopg2 direct, no ORM)
-- **Services** (`router/services/`, `worker/services/`): Orchestration logic with dependency injection via constructor
-- **Handlers** (`router/handler.py`, `worker/handler.py`): Lambda entry points; wire dependencies from env vars at module level
+- **Domains** (`domains/models.py`): Dataclasses — `RegisteredAddress`, `Email`, `Transaction`
+- **Interfaces** (`interfaces/`): ABCs — `EmailRepository`, `EmailStorage`, `EmailQueue`, `EmailParser`, `TransactionRepository`
+- **Adapters** (`adapters/`): Concrete implementations — S3, SQS, PostgreSQL (psycopg2 direct, no ORM)
+- **Services** (`lambdas/services/`): Orchestration logic with dependency injection via constructor
+- **Handler** (`lambdas/handler.py`): Lambda entry points; wire dependencies from env vars at module level
 
-### Parser plugin system (`worker/services/parsers/`):
+### Parser plugin system (`lambdas/services/parsers/`):
 Registry in `__init__.py` with `find_parser(to_address, subject)`. Each parser implements `EmailParser.can_parse()` and `EmailParser.parse()`. Currently: `CathayParser` (matches `cathay-*` addresses, extracts transactions from HTML tables using fixed cell offsets).
 
 ## Code Conventions
@@ -55,6 +55,7 @@ Registry in `__init__.py` with `find_parser(to_address, subject)`. Each parser i
 - **Logging:** `logging.getLogger(__name__)` with structured JSON extras
 - **DB pattern:** Direct psycopg2 with `RETURNING` clauses, explicit `conn.commit()`
 - **Domain models:** Plain `@dataclass`, no methods; `id: int | None` for pre-persistence
+- **Test files:** Colocated with implementation, `_test.py` suffix (e.g., `handler.py` → `handler_test.py`)
 
 ## Infrastructure
 
@@ -66,9 +67,9 @@ Registry in `__init__.py` with `find_parser(to_address, subject)`. Each parser i
 
 ## Adding a New Bank Parser
 
-1. Create `src/spend_tracking/worker/services/parsers/bank_name.py` implementing `EmailParser`
-2. Register in `worker/services/parsers/__init__.py` `_PARSERS` list
-3. Add tests in `tests/worker/test_bank_name_parser.py`
+1. Create `src/spend_tracking/lambdas/services/parsers/bank_name.py` implementing `EmailParser`
+2. Register in `lambdas/services/parsers/__init__.py` `_PARSERS` list
+3. Add tests in `src/spend_tracking/lambdas/services/parsers/bank_name_test.py`
 
 ## Plan Files (`docs/plans/`)
 
