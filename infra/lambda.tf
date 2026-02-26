@@ -10,7 +10,7 @@ data "archive_file" "placeholder" {
 
 resource "aws_lambda_function" "router" {
   function_name = "${var.project_name}-router"
-  role          = aws_iam_role.router.arn
+  role          = aws_iam_role.lambda.arn
   handler       = "spend_tracking.lambdas.handler.email_router_handler"
   runtime       = "python3.12"
   timeout       = 30
@@ -46,7 +46,7 @@ resource "aws_lambda_permission" "allow_s3" {
 
 resource "aws_lambda_function" "worker" {
   function_name = "${var.project_name}-worker"
-  role          = aws_iam_role.worker.arn
+  role          = aws_iam_role.lambda.arn
   handler       = "spend_tracking.lambdas.handler.email_worker_handler"
   runtime       = "python3.12"
   timeout       = 60
