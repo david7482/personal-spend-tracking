@@ -18,3 +18,7 @@ output "raw_emails_bucket" {
 output "sqs_queue_url" {
   value = aws_sqs_queue.email-processing.url
 }
+
+output "line_webhook_url" {
+  value = aws_lambda_function_url.line_webhook_router.function_url
+}
