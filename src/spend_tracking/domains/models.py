@@ -42,3 +42,15 @@ class Transaction:
     notes: str | None
     raw_data: dict | None
     created_at: datetime
+
+
+@dataclass
+class LineMessage:
+    id: int | None
+    line_user_id: str
+    message_type: str
+    message: str | None
+    reply_token: str | None
+    raw_event: dict
+    timestamp: datetime
+    created_at: datetime

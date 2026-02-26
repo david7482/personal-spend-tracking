@@ -99,3 +99,25 @@ def test_transaction_creation():
     assert txn.raw_data is not None
     assert txn.raw_data["card_type"] == "正卡"
     assert txn.id is None
+
+
+def test_line_message_creation():
+    from datetime import UTC, datetime
+
+    from spend_tracking.domains.models import LineMessage
+
+    msg = LineMessage(
+        id=None,
+        line_user_id="U1234567890abcdef",
+        message_type="text",
+        message="Hello",
+        reply_token="abc123",
+        raw_event={"type": "message", "message": {"type": "text", "text": "Hello"}},
+        timestamp=datetime(2026, 2, 27, 10, 0, 0, tzinfo=UTC),
+        created_at=datetime(2026, 2, 27, 10, 0, 1, tzinfo=UTC),
+    )
+    assert msg.id is None
+    assert msg.line_user_id == "U1234567890abcdef"
+    assert msg.message_type == "text"
+    assert msg.message == "Hello"
+    assert msg.raw_event["type"] == "message"
