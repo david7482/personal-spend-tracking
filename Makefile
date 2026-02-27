@@ -8,10 +8,12 @@ BUILD_DIR := .build
 AWS_REGION := us-east-1
 
 build:
-	rm -rf $(BUILD_DIR)/lambda
+	rm -rf $(BUILD_DIR)/lambda $(BUILD_DIR)/lambda.zip
 	mkdir -p $(BUILD_DIR)/lambda
 	pip install --no-deps -t $(BUILD_DIR)/lambda/ --quiet --platform manylinux2014_x86_64 --python-version 3.12 --only-binary=:all: psycopg2-binary
+	pip install -t $(BUILD_DIR)/lambda/ --quiet anthropic
 	cp -r src/spend_tracking $(BUILD_DIR)/lambda/
+	find $(BUILD_DIR)/lambda -name '*_test.py' -delete
 	cd $(BUILD_DIR)/lambda && zip -r ../lambda.zip . -x "*.pyc" "__pycache__/*"
 
 deploy-email-router: build
