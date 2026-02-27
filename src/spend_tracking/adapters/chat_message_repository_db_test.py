@@ -66,12 +66,26 @@ def test_load_history_returns_ordered_messages(mock_psycopg2, mock_boto3):
     mock_conn, mock_cur = _mock_db()
     # DB returns DESC order (newest first), reversed() makes it chronological
     mock_cur.fetchall.return_value = [
-        (2, "U123", "assistant", "Hello!", "text", None,
-         datetime(2026, 2, 27, 9, 0, 1, tzinfo=UTC),
-         datetime(2026, 2, 27, 9, 0, 1, tzinfo=UTC)),
-        (1, "U123", "user", "Hi", "text", None,
-         datetime(2026, 2, 27, 9, 0, 0, tzinfo=UTC),
-         datetime(2026, 2, 27, 9, 0, 0, tzinfo=UTC)),
+        (
+            2,
+            "U123",
+            "assistant",
+            "Hello!",
+            "text",
+            None,
+            datetime(2026, 2, 27, 9, 0, 1, tzinfo=UTC),
+            datetime(2026, 2, 27, 9, 0, 1, tzinfo=UTC),
+        ),
+        (
+            1,
+            "U123",
+            "user",
+            "Hi",
+            "text",
+            None,
+            datetime(2026, 2, 27, 9, 0, 0, tzinfo=UTC),
+            datetime(2026, 2, 27, 9, 0, 0, tzinfo=UTC),
+        ),
     ]
     mock_psycopg2.connect.return_value = mock_conn
 
@@ -98,7 +112,12 @@ def test_get_by_id_returns_message(mock_psycopg2, mock_boto3):
     }
     mock_conn, mock_cur = _mock_db()
     mock_cur.fetchone.return_value = (
-        42, "U123", "user", "Hi", "text", None,
+        42,
+        "U123",
+        "user",
+        "Hi",
+        "text",
+        None,
         datetime(2026, 2, 27, 9, 0, 0, tzinfo=UTC),
         datetime(2026, 2, 27, 9, 0, 0, tzinfo=UTC),
     )

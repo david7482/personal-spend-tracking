@@ -1,6 +1,5 @@
-import json
 from datetime import UTC, datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from spend_tracking.domains.models import ChatMessage
 
@@ -58,14 +57,10 @@ def test_execute_loads_message_runs_agent_saves_and_pushes():
     mock_final_message.content = [MagicMock(type="text", text="Agent reply")]
     mock_final_message.model = "claude-opus-4-6"
     mock_final_message.stop_reason = "end_turn"
-    mock_final_message.usage = MagicMock(
-        input_tokens=100, output_tokens=50
-    )
+    mock_final_message.usage = MagicMock(input_tokens=100, output_tokens=50)
 
     mock_runner = MagicMock()
-    mock_runner.__iter__ = MagicMock(
-        return_value=iter([mock_final_message])
-    )
+    mock_runner.__iter__ = MagicMock(return_value=iter([mock_final_message]))
 
     mock_client = MagicMock()
     mock_client.beta.messages.tool_runner.return_value = mock_runner
