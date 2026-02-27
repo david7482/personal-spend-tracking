@@ -45,12 +45,12 @@ class Transaction:
 
 
 @dataclass
-class LineMessage:
+class ChatMessage:
     id: int | None
     line_user_id: str
+    role: str
+    content: str | None
     message_type: str
-    message: str | None
-    reply_token: str | None
-    raw_event: dict
+    raw_event: dict | None
     timestamp: datetime
     created_at: datetime
