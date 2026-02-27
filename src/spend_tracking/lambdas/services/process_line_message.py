@@ -17,15 +17,17 @@ by querying their transaction database and performing calculations.
 Always respond in the same language the user writes in.
 
 You have access to:
-- query_db: Run read-only SQL against the transactions table. Columns: id, source_type, \
-source_id, bank, transaction_at, region, amount, currency, merchant, category, notes, \
+- query_db: Run read-only SQL against the transactions table. \
+Columns: id, source_type, source_id, bank, transaction_at, \
+region, amount, currency, merchant, category, notes, \
 raw_data, created_at.
-- code_execution: Run Python/bash code for calculations, data analysis, and visualizations.
+- code_execution: Run Python/bash code for calculations, \
+data analysis, and visualizations.
 
 Guidelines:
 - Keep responses concise (this is a chat app, not a report).
-- Use query_db to look up real transaction data before answering spending questions.
-- Use code_execution for calculations, aggregations, or formatting that SQL alone can't do.
+- Use query_db to look up real transaction data first.
+- Use code_execution for calculations or formatting.
 - Amounts are stored as DECIMAL. Currency is a string like 'TWD', 'USD'.
 - When showing monetary values, include the currency symbol.
 - If the user's question is unclear, ask for clarification.\
@@ -69,9 +71,7 @@ def _validate_sql(sql: str) -> bool:
     return stripped.startswith("SELECT") or stripped.startswith("WITH")
 
 
-def _build_messages(
-    history: list[ChatMessage], current: ChatMessage
-) -> list[dict]:
+def _build_messages(history: list[ChatMessage], current: ChatMessage) -> list[dict]:
     """Build Anthropic messages array from conversation history."""
     messages: list[dict] = []
     for msg in history:
@@ -110,13 +110,15 @@ def _make_query_db_tool(connection_string: str):  # type: ignore[no-untyped-def]
             return json.dumps({"error": "Only SELECT queries are allowed."})
 
         try:
-            with psycopg2.connect(connection_string) as conn:
-                with conn.cursor() as cur:
-                    cur.execute(sql)
-                    columns = [desc[0] for desc in cur.description or []]
-                    rows = cur.fetchall()
-                    result = [dict(zip(columns, row)) for row in rows]
-                    return json.dumps(result, default=str)
+            with (
+                psycopg2.connect(connection_string) as conn,
+                conn.cursor() as cur,
+            ):
+                cur.execute(sql)
+                columns = [desc[0] for desc in cur.description or []]
+                rows = cur.fetchall()
+                result = [dict(zip(columns, row, strict=False)) for row in rows]
+                return json.dumps(result, default=str)
         except Exception as e:
             return json.dumps({"error": str(e)})
 
@@ -167,12 +169,14 @@ class ProcessLineMessage:
                     query_db_tool,
                     {"type": "code_execution_20260120", "name": "code_execution"},
                 ],
-                messages=messages,
+                messages=messages,  # type: ignore[arg-type]
             )
             final_message = None
             for message in runner:
                 final_message = message
-            reply_text = _extract_text(final_message) if final_message else FALLBACK_MESSAGE
+            reply_text = (
+                _extract_text(final_message) if final_message else FALLBACK_MESSAGE
+            )
         except Exception:
             logger.exception(
                 "Agent loop failed",
@@ -212,8 +216,8 @@ class ProcessLineMessage:
                 "model": getattr(message, "model", None),
                 "stop_reason": getattr(message, "stop_reason", None),
                 "usage": {
-                    "input_tokens": getattr(message.usage, "input_tokens", None),  # type: ignore[union-attr]
-                    "output_tokens": getattr(message.usage, "output_tokens", None),  # type: ignore[union-attr]
+                    "input_tokens": getattr(message.usage, "input_tokens", None),  # type: ignore[attr-defined]
+                    "output_tokens": getattr(message.usage, "output_tokens", None),  # type: ignore[attr-defined]
                 },
             }
         except Exception:

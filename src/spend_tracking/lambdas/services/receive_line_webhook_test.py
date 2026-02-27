@@ -2,7 +2,7 @@ import base64
 import hashlib
 import hmac
 import json
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 CHANNEL_SECRET = "test-channel-secret"
 LINE_CHANNEL_ACCESS_TOKEN = "test-token"

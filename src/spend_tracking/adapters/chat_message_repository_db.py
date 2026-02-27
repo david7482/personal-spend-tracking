@@ -39,9 +39,7 @@ class DbChatMessageRepository(ChatMessageRepository):
             message.id = row[0]
             conn.commit()
 
-    def load_history(
-        self, line_user_id: str, limit: int = 20
-    ) -> list[ChatMessage]:
+    def load_history(self, line_user_id: str, limit: int = 20) -> list[ChatMessage]:
         with psycopg2.connect(self._connection_string) as conn, conn.cursor() as cur:
             cur.execute(
                 "SELECT id, line_user_id, role, content, message_type, "
