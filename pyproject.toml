@@ -51,6 +51,7 @@ module = [
     "spend_tracking.lambdas.services.process_line_message_test",
     "spend_tracking.lambdas.line_webhook_router_handler_test",
     "spend_tracking.lambdas.line_message_worker_handler_test",
+    "spend_tracking.lambdas.services.agent_test",
 ]
 disallow_untyped_defs = false
 
