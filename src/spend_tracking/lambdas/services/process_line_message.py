@@ -16,19 +16,10 @@ by querying their transaction database and performing calculations.
 
 Always respond in the same language the user writes in.
 
-You have access to:
-- query_db: Run read-only SQL against the transactions table. \
-Columns: id, source_type, source_id, bank, transaction_at, \
-region, amount, currency, merchant, category, notes, \
-raw_data, created_at.
-- code_execution: Run Python/bash code for calculations, \
-data analysis, and visualizations.
-
 Guidelines:
 - Keep responses concise (this is a chat app, not a report).
 - Use query_db to look up real transaction data first.
 - Use code_execution for calculations or formatting.
-- Amounts are stored as DECIMAL. Currency is a string like 'TWD', 'USD'.
 - When showing monetary values, include the currency symbol.
 - If the user's question is unclear, ask for clarification.\
 """
@@ -97,9 +88,25 @@ def _make_query_db_tool(connection_string: str):  # type: ignore[no-untyped-def]
     @beta_tool
     def query_db(sql: str) -> str:
         """Run a read-only SQL query against the transactions table.
-        Only SELECT statements are allowed. The transactions table has columns:
-        id, source_type, source_id, bank, transaction_at, region, amount,
-        currency, merchant, category, notes, raw_data, created_at.
+        Only SELECT statements are allowed.
+
+        Schema — transactions:
+          id              BIGSERIAL PK
+          source_type     TEXT, currently always 'email'
+          source_id       BIGINT, nullable, references emails.id
+          bank            TEXT, lowercase bank name (e.g. 'cathay')
+          transaction_at  TIMESTAMPTZ, when the transaction occurred (stored in UTC)
+          region          TEXT, nullable, ISO country code (e.g. 'TW', 'NL')
+          amount          NUMERIC(12,2), always positive
+          currency        TEXT, default 'TWD' (e.g. 'TWD', 'USD')
+          merchant        TEXT, nullable, may contain Chinese text
+          category        TEXT, nullable, may contain Chinese text
+                          (e.g. '線上繳費', '其他')
+          notes           TEXT, nullable
+          raw_data        JSONB, nullable, bank-specific payload
+                          (Cathay: {"card_type": "正卡",
+                           "mobile_card_last_four": "4623"})
+          created_at      TIMESTAMPTZ, default now()
 
         Args:
             sql: A SELECT SQL query to run against the transactions table.
