@@ -18,7 +18,7 @@ resource "aws_sqs_queue" "line-message-dlq" {
 
 resource "aws_sqs_queue" "line-message-processing" {
   name                       = "${var.project_name}-line-message-processing"
-  visibility_timeout_seconds = 300
+  visibility_timeout_seconds = 660
 
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.line-message-dlq.arn

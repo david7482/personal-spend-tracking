@@ -40,11 +40,12 @@ resource "aws_iam_role_policy" "lambda" {
       },
       {
         Effect   = "Allow"
-        Action   = ["ssm:GetParameter"]
+        Action   = ["ssm:GetParameter", "ssm:GetParameters"]
         Resource = [
           aws_ssm_parameter.db_connection_string.arn,
           aws_ssm_parameter.line_channel_access_token.arn,
-          aws_ssm_parameter.line_channel_secret.arn
+          aws_ssm_parameter.line_channel_secret.arn,
+          aws_ssm_parameter.anthropic_api_key.arn
         ]
       },
       {

@@ -89,9 +89,10 @@ resource "aws_lambda_function" "line_webhook_router" {
 
   environment {
     variables = {
-      SSM_DB_CONNECTION_STRING   = aws_ssm_parameter.db_connection_string.name
-      SSM_LINE_CHANNEL_SECRET    = aws_ssm_parameter.line_channel_secret.name
-      SQS_LINE_MESSAGE_QUEUE_URL = aws_sqs_queue.line-message-processing.url
+      SSM_DB_CONNECTION_STRING      = aws_ssm_parameter.db_connection_string.name
+      SSM_LINE_CHANNEL_SECRET       = aws_ssm_parameter.line_channel_secret.name
+      SSM_LINE_CHANNEL_ACCESS_TOKEN = aws_ssm_parameter.line_channel_access_token.name
+      SQS_LINE_MESSAGE_QUEUE_URL    = aws_sqs_queue.line-message-processing.url
     }
   }
 
@@ -123,13 +124,16 @@ resource "aws_lambda_function" "line_message_worker" {
   role          = aws_iam_role.lambda.arn
   handler       = "spend_tracking.lambdas.line_message_worker_handler.handler"
   runtime       = "python3.12"
-  timeout       = 60
-  memory_size   = 128
+  timeout       = 600
+  memory_size   = 256
   filename      = data.archive_file.placeholder.output_path
 
   environment {
     variables = {
-      SSM_DB_CONNECTION_STRING = aws_ssm_parameter.db_connection_string.name
+      SSM_DB_CONNECTION_STRING      = aws_ssm_parameter.db_connection_string.name
+      SSM_ANTHROPIC_API_KEY         = aws_ssm_parameter.anthropic_api_key.name
+      SSM_LINE_CHANNEL_ACCESS_TOKEN = aws_ssm_parameter.line_channel_access_token.name
+      ANTHROPIC_MODEL               = "claude-haiku-4-5-20251001"
     }
   }
 
