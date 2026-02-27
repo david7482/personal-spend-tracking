@@ -1,4 +1,4 @@
-.PHONY: build deploy deploy-email-router deploy-email-worker deploy-line-webhook-router deploy-line-message-worker clean test migrate migrate-new lint lint-fix format-check format typecheck ci
+.PHONY: build deploy deploy-email-router deploy-email-worker deploy-line-webhook-router deploy-line-message-worker clean test migrate migrate-new lint lint-fix format-check format typecheck ci chat
 
 ROUTER_FUNCTION := spend-tracking-router
 WORKER_FUNCTION := spend-tracking-worker
@@ -65,6 +65,9 @@ format-check:
 
 format:
 	poetry run ruff format src/
+
+chat:
+	PYTHONPATH=src poetry run python -m spend_tracking.cli.chat
 
 typecheck:
 	PYTHONPATH=src poetry run mypy
