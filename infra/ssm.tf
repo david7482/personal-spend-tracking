@@ -27,3 +27,13 @@ resource "aws_ssm_parameter" "line_channel_secret" {
     ignore_changes = [value]
   }
 }
+
+resource "aws_ssm_parameter" "anthropic_api_key" {
+  name  = "/${var.project_name}/anthropic-api-key"
+  type  = "SecureString"
+  value = "placeholder"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
