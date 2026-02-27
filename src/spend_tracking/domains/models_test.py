@@ -101,23 +101,19 @@ def test_transaction_creation():
     assert txn.id is None
 
 
-def test_line_message_creation():
-    from datetime import UTC, datetime
+def test_chat_message_creation():
+    from spend_tracking.domains.models import ChatMessage
 
-    from spend_tracking.domains.models import LineMessage
-
-    msg = LineMessage(
+    msg = ChatMessage(
         id=None,
-        line_user_id="U1234567890abcdef",
+        line_user_id="U123",
+        role="user",
+        content="Hello",
         message_type="text",
-        message="Hello",
-        reply_token="abc123",
-        raw_event={"type": "message", "message": {"type": "text", "text": "Hello"}},
+        raw_event={"type": "message"},
         timestamp=datetime(2026, 2, 27, 10, 0, 0, tzinfo=UTC),
         created_at=datetime(2026, 2, 27, 10, 0, 1, tzinfo=UTC),
     )
+    assert msg.role == "user"
+    assert msg.content == "Hello"
     assert msg.id is None
-    assert msg.line_user_id == "U1234567890abcdef"
-    assert msg.message_type == "text"
-    assert msg.message == "Hello"
-    assert msg.raw_event["type"] == "message"
