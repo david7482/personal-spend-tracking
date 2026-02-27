@@ -1,15 +1,21 @@
 import os
 from unittest.mock import MagicMock, patch
 
-# Mock boto3 and env vars before module import triggers wiring
 _mock_boto3_client = MagicMock()
-_mock_boto3_client.get_parameter.return_value = {"Parameter": {"Value": "fake"}}
+_mock_boto3_client.get_parameters.return_value = {
+    "Parameters": [
+        {"Name": "/test/secret", "Value": "fake-secret"},
+        {"Name": "/test/token", "Value": "fake-token"},
+    ]
+}
+_mock_boto3_client.get_parameter.return_value = {"Parameter": {"Value": "fake-db"}}
 
 with (
     patch.dict(
         os.environ,
         {
             "SSM_LINE_CHANNEL_SECRET": "/test/secret",
+            "SSM_LINE_CHANNEL_ACCESS_TOKEN": "/test/token",
             "SSM_DB_CONNECTION_STRING": "/test/db",
             "SQS_LINE_MESSAGE_QUEUE_URL": "https://test-queue",
         },
