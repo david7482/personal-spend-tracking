@@ -4,22 +4,27 @@ import hmac
 import json
 import logging
 from datetime import UTC, datetime
+from urllib.request import Request, urlopen
 
-from spend_tracking.domains.models import LineMessage
+from spend_tracking.domains.models import ChatMessage
+from spend_tracking.interfaces.chat_message_repository import ChatMessageRepository
 from spend_tracking.interfaces.line_message_queue import LineMessageQueue
-from spend_tracking.interfaces.line_message_repository import LineMessageRepository
 
 logger = logging.getLogger(__name__)
+
+LINE_LOADING_URL = "https://api.line.me/v2/bot/chat/loading/start"
 
 
 class ReceiveLineWebhook:
     def __init__(
         self,
         channel_secret: str,
-        repository: LineMessageRepository,
+        channel_access_token: str,
+        repository: ChatMessageRepository,
         queue: LineMessageQueue,
     ) -> None:
         self._channel_secret = channel_secret
+        self._channel_access_token = channel_access_token
         self._repository = repository
         self._queue = queue
 
@@ -42,31 +47,52 @@ class ReceiveLineWebhook:
             message_obj = event.get("message", {})
             message_type = message_obj.get("type", "unknown")
             message_text = message_obj.get("text") if message_type == "text" else None
+            line_user_id = event["source"]["userId"]
 
-            line_message = LineMessage(
+            chat_message = ChatMessage(
                 id=None,
-                line_user_id=event["source"]["userId"],
+                line_user_id=line_user_id,
+                role="user",
+                content=message_text,
                 message_type=message_type,
-                message=message_text,
-                reply_token=event.get("replyToken"),
                 raw_event=event,
                 timestamp=datetime.fromtimestamp(event["timestamp"] / 1000, tz=UTC),
                 created_at=datetime.now(UTC),
             )
 
-            self._repository.save_line_message(line_message)
+            self._repository.save(chat_message)
             logger.info(
-                "Saved LINE message",
+                "Saved chat message",
                 extra={
-                    "line_message_id": line_message.id,
-                    "line_user_id": line_message.line_user_id,
+                    "chat_message_id": chat_message.id,
+                    "line_user_id": line_user_id,
                     "message_type": message_type,
                 },
             )
 
-            self._queue.send_message({"line_message_id": line_message.id})
+            self._send_loading_animation(line_user_id)
+            self._queue.send_message({"chat_message_id": chat_message.id})
 
         return {"statusCode": 200, "body": "OK"}
+
+    def _send_loading_animation(self, line_user_id: str) -> None:
+        try:
+            data = json.dumps({"chatId": line_user_id}).encode("utf-8")
+            request = Request(
+                LINE_LOADING_URL,
+                data=data,
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {self._channel_access_token}",
+                },
+            )
+            with urlopen(request):
+                pass
+        except Exception:
+            logger.exception(
+                "Failed to send loading animation",
+                extra={"line_user_id": line_user_id},
+            )
 
     def _verify_signature(self, body: str, signature: str) -> bool:
         expected = base64.b64encode(
