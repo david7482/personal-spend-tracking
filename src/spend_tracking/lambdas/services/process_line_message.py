@@ -2,29 +2,18 @@ import json
 import logging
 from datetime import UTC, datetime
 
-import psycopg2
-from anthropic import Anthropic, beta_tool
+from anthropic import Anthropic
 
 from spend_tracking.domains.models import ChatMessage
 from spend_tracking.interfaces.chat_message_repository import ChatMessageRepository
+from spend_tracking.lambdas.services.agent import (
+    FALLBACK_MESSAGE,
+    build_tools,
+    extract_text,
+    run_agent,
+)
 
 logger = logging.getLogger(__name__)
-
-SYSTEM_PROMPT = """\
-You are a personal finance assistant. You help the user understand their spending \
-by querying their transaction database and performing calculations.
-
-Always respond in the same language the user writes in.
-
-Guidelines:
-- Keep responses concise (this is a chat app, not a report).
-- Use query_db to look up real transaction data first.
-- Use code_execution for calculations or formatting.
-- When showing monetary values, include the currency symbol.
-- If the user's question is unclear, ask for clarification.\
-"""
-
-FALLBACK_MESSAGE = "Sorry, I'm having trouble right now. Please try again later."
 
 
 class LinePushSender:
@@ -56,12 +45,6 @@ class LinePushSender:
             )
 
 
-def _validate_sql(sql: str) -> bool:
-    """Only allow SELECT statements."""
-    stripped = sql.strip().upper()
-    return stripped.startswith("SELECT") or stripped.startswith("WITH")
-
-
 def _build_messages(history: list[ChatMessage], current: ChatMessage) -> list[dict]:
     """Build Anthropic messages array from conversation history."""
     messages: list[dict] = []
@@ -71,65 +54,6 @@ def _build_messages(history: list[ChatMessage], current: ChatMessage) -> list[di
     if current.content is not None:
         messages.append({"role": "user", "content": current.content})
     return messages
-
-
-def _extract_text(message: object) -> str:
-    """Extract text content from Anthropic response message."""
-    parts: list[str] = []
-    for block in message.content:  # type: ignore[attr-defined]
-        if getattr(block, "type", None) == "text":
-            parts.append(block.text)
-    return "\n".join(parts) if parts else FALLBACK_MESSAGE
-
-
-def _make_query_db_tool(connection_string: str):  # type: ignore[no-untyped-def]
-    """Create a query_db beta_tool function bound to a DB connection string."""
-
-    @beta_tool
-    def query_db(sql: str) -> str:
-        """Run a read-only SQL query against the transactions table.
-        Only SELECT statements are allowed.
-
-        Schema — transactions:
-          id              BIGSERIAL PK
-          source_type     TEXT, currently always 'email'
-          source_id       BIGINT, nullable, references emails.id
-          bank            TEXT, lowercase bank name (e.g. 'cathay')
-          transaction_at  TIMESTAMPTZ, when the transaction occurred (stored in UTC)
-          region          TEXT, nullable, ISO country code (e.g. 'TW', 'NL')
-          amount          NUMERIC(12,2), always positive
-          currency        TEXT, default 'TWD' (e.g. 'TWD', 'USD')
-          merchant        TEXT, nullable, may contain Chinese text
-          category        TEXT, nullable, may contain Chinese text
-                          (e.g. '線上繳費', '其他')
-          notes           TEXT, nullable
-          raw_data        JSONB, nullable, bank-specific payload
-                          (Cathay: {"card_type": "正卡",
-                           "mobile_card_last_four": "4623"})
-          created_at      TIMESTAMPTZ, default now()
-
-        Args:
-            sql: A SELECT SQL query to run against the transactions table.
-        Returns:
-            JSON array of result rows, or an error message.
-        """
-        if not _validate_sql(sql):
-            return json.dumps({"error": "Only SELECT queries are allowed."})
-
-        try:
-            with (
-                psycopg2.connect(connection_string) as conn,
-                conn.cursor() as cur,
-            ):
-                cur.execute(sql)
-                columns = [desc[0] for desc in cur.description or []]
-                rows = cur.fetchall()
-                result = [dict(zip(columns, row, strict=False)) for row in rows]
-                return json.dumps(result, default=str)
-        except Exception as e:
-            return json.dumps({"error": str(e)})
-
-    return query_db
 
 
 class ProcessLineMessage:
@@ -167,22 +91,12 @@ class ProcessLineMessage:
             return
 
         try:
-            query_db_tool = _make_query_db_tool(self._db_connection_string)
-            runner = self._client.beta.messages.tool_runner(
-                model=self._model,
-                max_tokens=4096,
-                system=SYSTEM_PROMPT,
-                tools=[
-                    query_db_tool,
-                    {"type": "code_execution_20260120", "name": "code_execution"},
-                ],
-                messages=messages,  # type: ignore[arg-type]
-            )
+            tools = build_tools(self._db_connection_string)
             final_message = None
-            for message in runner:
+            for message in run_agent(self._client, self._model, tools, messages):
                 final_message = message
             reply_text = (
-                _extract_text(final_message) if final_message else FALLBACK_MESSAGE
+                extract_text(final_message) if final_message else FALLBACK_MESSAGE
             )
         except Exception:
             logger.exception(

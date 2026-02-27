@@ -108,5 +108,4 @@ def run_agent(
         tools=tools,
         messages=messages,  # type: ignore[arg-type]
     )
-    for message in runner:
-        yield message
+    yield from runner

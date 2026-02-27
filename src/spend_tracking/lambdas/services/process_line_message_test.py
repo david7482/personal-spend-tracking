@@ -118,17 +118,15 @@ def test_execute_handles_api_error_sends_fallback():
 
 
 def test_query_db_rejects_non_select():
-    from spend_tracking.lambdas.services.process_line_message import (
-        _validate_sql,
-    )
+    from spend_tracking.lambdas.services.agent import validate_sql
 
-    assert _validate_sql("SELECT * FROM transactions") is True
-    assert _validate_sql("select count(*) from transactions") is True
-    assert _validate_sql("WITH cte AS (SELECT 1) SELECT * FROM cte") is True
-    assert _validate_sql("DROP TABLE transactions") is False
-    assert _validate_sql("DELETE FROM transactions") is False
-    assert _validate_sql("INSERT INTO transactions VALUES (1)") is False
-    assert _validate_sql("UPDATE transactions SET amount = 0") is False
+    assert validate_sql("SELECT * FROM transactions") is True
+    assert validate_sql("select count(*) from transactions") is True
+    assert validate_sql("WITH cte AS (SELECT 1) SELECT * FROM cte") is True
+    assert validate_sql("DROP TABLE transactions") is False
+    assert validate_sql("DELETE FROM transactions") is False
+    assert validate_sql("INSERT INTO transactions VALUES (1)") is False
+    assert validate_sql("UPDATE transactions SET amount = 0") is False
 
 
 def test_build_messages_from_history():
