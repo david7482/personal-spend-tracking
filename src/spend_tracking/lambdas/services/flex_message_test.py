@@ -107,3 +107,91 @@ def test_build_flex_message_formats_amount_with_commas():
     row = result["body"]["contents"][0]
     amount_text = row["contents"][1]["text"]
     assert "NT$12,345,678" in amount_text
+
+
+def test_build_chat_flex_bubble_key_value_section():
+    from spend_tracking.lambdas.services.flex_message import build_chat_flex_bubble
+
+    result = build_chat_flex_bubble(
+        title="Monthly Summary",
+        sections=[
+            {
+                "type": "key_value",
+                "items": [
+                    {"label": "Total", "value": "NT$12,345"},
+                    {"label": "Count", "value": "15"},
+                ],
+            }
+        ],
+    )
+
+    assert result["type"] == "bubble"
+    assert result["size"] == "mega"
+
+    # Header has title
+    header_texts = [c["text"] for c in result["header"]["contents"]]
+    assert header_texts[0] == "Monthly Summary"
+
+    # Body has key_value rows
+    body = result["body"]["contents"]
+    assert len(body) == 2  # two k/v rows
+    # First row: label on left, value on right
+    assert body[0]["contents"][0]["text"] == "Total"
+    assert body[0]["contents"][1]["text"] == "NT$12,345"
+
+
+def test_build_chat_flex_bubble_table_section():
+    from spend_tracking.lambdas.services.flex_message import build_chat_flex_bubble
+
+    result = build_chat_flex_bubble(
+        title="Top Merchants",
+        sections=[
+            {
+                "type": "table",
+                "headers": ["Merchant", "Amount"],
+                "rows": [
+                    ["7-ELEVEN", "NT$89"],
+                    ["Starbucks", "NT$150"],
+                ],
+            }
+        ],
+    )
+
+    body = result["body"]["contents"]
+    # header row + separator + data row + separator + data row = 5
+    assert len(body) == 5
+    # Header row is bold
+    assert body[0]["contents"][0]["weight"] == "bold"
+    # Separators between rows
+    assert body[1]["type"] == "separator"
+    assert body[3]["type"] == "separator"
+    # Data rows
+    assert body[2]["contents"][0]["text"] == "7-ELEVEN"
+    assert body[2]["contents"][1]["text"] == "NT$89"
+
+
+def test_build_chat_flex_bubble_mixed_sections():
+    from spend_tracking.lambdas.services.flex_message import build_chat_flex_bubble
+
+    result = build_chat_flex_bubble(
+        title="February Report",
+        sections=[
+            {
+                "type": "key_value",
+                "items": [{"label": "Total", "value": "NT$5,000"}],
+            },
+            {
+                "type": "table",
+                "headers": ["Category", "Amount"],
+                "rows": [["Food", "NT$3,000"]],
+            },
+        ],
+    )
+
+    body = result["body"]["contents"]
+    # 1 kv row + section_separator + header_row + separator + data_row = 5
+    assert len(body) == 5
+    # First item is key_value
+    assert body[0]["contents"][0]["text"] == "Total"
+    # Separator between sections
+    assert body[1]["type"] == "separator"

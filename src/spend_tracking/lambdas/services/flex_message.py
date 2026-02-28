@@ -118,6 +118,144 @@ def _build_transaction_row(txn: Transaction) -> dict[str, Any]:
     }
 
 
+def build_chat_flex_bubble(
+    title: str, sections: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """Build a Flex bubble for chat agent responses.
+
+    Args:
+        title: Bubble header text.
+        sections: List of section dicts. Each must have a "type" key:
+            - "key_value": {"items": [{"label": str, "value": str}, ...]}
+            - "table": {"headers": [str, ...], "rows": [[str, ...], ...]}
+    """
+    return {
+        "type": "bubble",
+        "size": "mega",
+        "header": _build_chat_header(title),
+        "body": _build_chat_body(sections),
+    }
+
+
+def _build_chat_header(title: str) -> dict[str, Any]:
+    return {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+            {
+                "type": "text",
+                "text": title,
+                "weight": "bold",
+                "size": "lg",
+                "color": "#FFFFFF",
+            },
+        ],
+        "backgroundColor": "#4A6B8A",
+        "paddingAll": "18px",
+        "paddingStart": "20px",
+    }
+
+
+def _build_chat_body(sections: list[dict[str, Any]]) -> dict[str, Any]:
+    contents: list[dict[str, Any]] = []
+    for i, section in enumerate(sections):
+        if i > 0:
+            contents.append(
+                {"type": "separator", "color": "#E0E0E0", "margin": "lg"}
+            )
+        section_type = section.get("type")
+        if section_type == "key_value":
+            contents.extend(_build_kv_rows(section.get("items", [])))
+        elif section_type == "table":
+            contents.extend(
+                _build_table_rows(
+                    section.get("headers", []), section.get("rows", [])
+                )
+            )
+    return {
+        "type": "box",
+        "layout": "vertical",
+        "spacing": "md",
+        "paddingAll": "20px",
+        "contents": contents,
+    }
+
+
+def _build_kv_rows(items: list[dict[str, str]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for item in items:
+        rows.append(
+            {
+                "type": "box",
+                "layout": "horizontal",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": item.get("label", ""),
+                        "size": "sm",
+                        "color": "#8C8C8C",
+                        "flex": 2,
+                    },
+                    {
+                        "type": "text",
+                        "text": item.get("value", ""),
+                        "weight": "bold",
+                        "size": "sm",
+                        "color": "#2C3E50",
+                        "align": "end",
+                        "flex": 3,
+                    },
+                ],
+            }
+        )
+    return rows
+
+
+def _build_table_rows(
+    headers: list[str], rows: list[list[str]]
+) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    # Header row
+    result.append(
+        {
+            "type": "box",
+            "layout": "horizontal",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": h,
+                    "weight": "bold",
+                    "size": "xs",
+                    "color": "#8C8C8C",
+                    "flex": 1,
+                }
+                for h in headers
+            ],
+        }
+    )
+    # Data rows with separators
+    for row in rows:
+        result.append({"type": "separator", "color": "#F0F0F0"})
+        result.append(
+            {
+                "type": "box",
+                "layout": "horizontal",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": cell,
+                        "size": "sm",
+                        "color": "#2C3E50",
+                        "flex": 1,
+                        "wrap": True,
+                    }
+                    for cell in row
+                ],
+            }
+        )
+    return result
+
+
 def _build_footer(currency: str, total: Decimal) -> dict[str, Any]:
     return {
         "type": "box",
