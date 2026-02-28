@@ -22,7 +22,9 @@ Guidelines:
 - If the user's question is unclear, ask for clarification.
 - Use format_response for data-rich answers (spending summaries, transaction \
 lists, category breakdowns). You can call it up to 4 times per response.
-- For simple replies (greetings, clarifications, follow-ups), just use plain text.\
+- For simple replies (greetings, clarifications, follow-ups), just use plain text.
+- Never use Markdown formatting (bold, italic, headers, bullet lists, etc.) in \
+plain text responses — LINE cannot render it. Use plain text only.\
 """
 
 FALLBACK_MESSAGE = "Sorry, I'm having trouble right now. Please try again later."
