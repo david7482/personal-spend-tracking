@@ -156,6 +156,24 @@ def _build_chat_header(title: str) -> dict[str, Any]:
     }
 
 
+def _build_fallback_section(section: dict[str, Any]) -> list[dict[str, Any]]:
+    """Render an unknown section type as plain text lines."""
+    rows: list[dict[str, Any]] = []
+    items = section.get("items", [])
+    for item in items:
+        if isinstance(item, dict):
+            label = str(item.get("label", ""))
+            value = str(item.get("value", ""))
+            text = f"{label}: {value}" if label and value else label or value
+        else:
+            text = str(item)
+        if text:
+            rows.append(
+                {"type": "text", "text": text, "size": "sm", "color": "#2C3E50"}
+            )
+    return rows
+
+
 def _build_chat_body(sections: list[dict[str, Any]]) -> dict[str, Any]:
     contents: list[dict[str, Any]] = []
     for i, section in enumerate(sections):
@@ -168,6 +186,10 @@ def _build_chat_body(sections: list[dict[str, Any]]) -> dict[str, Any]:
             contents.extend(
                 _build_table_rows(section.get("headers", []), section.get("rows", []))
             )
+        else:
+            contents.extend(_build_fallback_section(section))
+    if not contents:
+        contents.append({"type": "text", "text": " ", "size": "sm", "color": "#8C8C8C"})
     return {
         "type": "box",
         "layout": "vertical",

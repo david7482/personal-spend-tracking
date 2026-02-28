@@ -1,6 +1,7 @@
 import json
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
+from urllib.error import HTTPError
 
 from spend_tracking.domains.models import ChatMessage
 
@@ -159,6 +160,32 @@ def test_send_messages_posts_multiple_messages(mock_urlopen):
     assert len(body["messages"]) == 2
     assert body["messages"][0]["type"] == "flex"
     assert body["messages"][1]["type"] == "text"
+
+
+@patch("spend_tracking.lambdas.services.process_line_message.urlopen")
+def test_send_messages_logs_error_body_on_http_error(mock_urlopen):
+    import io
+
+    from spend_tracking.lambdas.services.process_line_message import LinePushSender
+
+    error_body = (
+        b'{"message":"The request body has 1 error(s)",'
+        b'"details":[{"message":"contents needs 1 item"}]}'
+    )
+    error = HTTPError(
+        url="https://api.line.me/v2/bot/message/push",
+        code=400,
+        msg="Bad Request",
+        hdrs={},  # type: ignore[arg-type]
+        fp=io.BytesIO(error_body),
+    )
+    mock_urlopen.side_effect = error
+
+    sender = LinePushSender(channel_access_token="test-token")
+    import pytest
+
+    with pytest.raises(HTTPError):
+        sender.send_messages("U123", [{"type": "text", "text": "Hello"}])
 
 
 def test_build_tools_returns_tuple_with_flex_bubbles():

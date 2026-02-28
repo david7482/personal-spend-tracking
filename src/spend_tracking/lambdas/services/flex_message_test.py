@@ -170,6 +170,51 @@ def test_build_chat_flex_bubble_table_section():
     assert body[2]["contents"][1]["text"] == "NT$89"
 
 
+def test_build_chat_flex_bubble_unknown_section_type_renders_as_text():
+    from spend_tracking.lambdas.services.flex_message import build_chat_flex_bubble
+
+    result = build_chat_flex_bubble(
+        title="Summary",
+        sections=[
+            {
+                "type": "summary",
+                "items": [
+                    {"label": "Total", "value": "NT$5,000"},
+                    {"label": "Count", "value": "10"},
+                ],
+            }
+        ],
+    )
+
+    body = result["body"]["contents"]
+    assert len(body) == 2
+    assert body[0]["type"] == "text"
+    assert "Total" in body[0]["text"]
+    assert "NT$5,000" in body[0]["text"]
+
+
+def test_build_chat_flex_bubble_empty_sections_produces_valid_contents():
+    from spend_tracking.lambdas.services.flex_message import build_chat_flex_bubble
+
+    result = build_chat_flex_bubble(title="Empty", sections=[])
+
+    body = result["body"]["contents"]
+    # Must have at least one element (LINE Flex API requirement)
+    assert len(body) >= 1
+
+
+def test_build_chat_flex_bubble_unknown_type_no_items_produces_valid_contents():
+    from spend_tracking.lambdas.services.flex_message import build_chat_flex_bubble
+
+    result = build_chat_flex_bubble(
+        title="Bad Section",
+        sections=[{"type": "unknown"}],
+    )
+
+    body = result["body"]["contents"]
+    assert len(body) >= 1
+
+
 def test_build_chat_flex_bubble_mixed_sections():
     from spend_tracking.lambdas.services.flex_message import build_chat_flex_bubble
 
