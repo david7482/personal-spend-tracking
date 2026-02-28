@@ -215,6 +215,55 @@ def test_build_chat_flex_bubble_unknown_type_no_items_produces_valid_contents():
     assert len(body) >= 1
 
 
+def test_build_chat_flex_bubble_empty_text_replaced_with_dash():
+    from spend_tracking.lambdas.services.flex_message import build_chat_flex_bubble
+
+    result = build_chat_flex_bubble(
+        title="Test",
+        sections=[
+            {
+                "type": "key_value",
+                "items": [
+                    {"label": "", "value": ""},
+                    {"label": "Total", "value": ""},
+                ],
+            }
+        ],
+    )
+
+    body = result["body"]["contents"]
+    # All text fields must be non-empty (LINE requirement)
+    first_row = body[0]["contents"]
+    assert first_row[0]["text"] == "-"
+    assert first_row[1]["text"] == "-"
+    second_row = body[1]["contents"]
+    assert second_row[0]["text"] == "Total"
+    assert second_row[1]["text"] == "-"
+
+
+def test_build_chat_flex_bubble_table_empty_cells_replaced():
+    from spend_tracking.lambdas.services.flex_message import build_chat_flex_bubble
+
+    result = build_chat_flex_bubble(
+        title="Test",
+        sections=[
+            {
+                "type": "table",
+                "headers": ["", "Amount"],
+                "rows": [["", "NT$100"]],
+            }
+        ],
+    )
+
+    body = result["body"]["contents"]
+    # Header row
+    assert body[0]["contents"][0]["text"] == "-"
+    assert body[0]["contents"][1]["text"] == "Amount"
+    # Data row (after separator)
+    assert body[2]["contents"][0]["text"] == "-"
+    assert body[2]["contents"][1]["text"] == "NT$100"
+
+
 def test_build_chat_flex_bubble_mixed_sections():
     from spend_tracking.lambdas.services.flex_message import build_chat_flex_bubble
 
