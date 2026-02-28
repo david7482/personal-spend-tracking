@@ -1,8 +1,11 @@
 import json
 from collections.abc import Generator
+from datetime import timedelta, timezone
 
 import psycopg2
 from anthropic import Anthropic, beta_tool
+
+USER_TZ = timezone(timedelta(hours=8))
 
 SYSTEM_PROMPT = """\
 You are a personal finance assistant. You help the user understand their spending \
@@ -53,6 +56,12 @@ def _make_query_db_tool(connection_string: str):  # type: ignore[no-untyped-def]
                            "mobile_card_last_four": "4623"})
           created_at      TIMESTAMPTZ, default now()
 
+        Timezone: The user is in UTC+8 (Asia/Taipei). transaction_at is stored
+        in UTC. When filtering by date (e.g. "yesterday", "today"), use
+        timezone-aware literals. Example for "yesterday" in UTC+8:
+          WHERE transaction_at >= '2026-02-27 00:00+08'
+            AND transaction_at < '2026-02-28 00:00+08'
+
         Args:
             sql: A SELECT SQL query to run against the transactions table.
         Returns:
@@ -77,9 +86,33 @@ def _make_query_db_tool(connection_string: str):  # type: ignore[no-untyped-def]
     return query_db
 
 
+@beta_tool
+def get_current_datetime() -> str:
+    """Get the current date and time in the user's timezone (Asia/Taipei, UTC+8).
+
+    Call this before constructing date-based SQL queries so you know
+    what "today", "yesterday", "this week", etc. mean.
+
+    Returns:
+        JSON with current date, datetime, and timezone offset.
+    """
+    from datetime import datetime as dt
+
+    now = dt.now(USER_TZ)
+    return json.dumps(
+        {
+            "date": now.strftime("%Y-%m-%d"),
+            "datetime": now.isoformat(),
+            "timezone": "Asia/Taipei (UTC+8)",
+            "weekday": now.strftime("%A"),
+        }
+    )
+
+
 def build_tools(db_connection_string: str) -> list:
     """Build the agent's tool list."""
     return [
+        get_current_datetime,
         _make_query_db_tool(db_connection_string),
         {"type": "code_execution_20260120", "name": "code_execution"},
     ]
