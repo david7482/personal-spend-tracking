@@ -65,6 +65,18 @@ def _build_messages(history: list[ChatMessage], current: ChatMessage) -> list[di
     return messages
 
 
+def _assemble_line_messages(
+    flex_bubbles: list[dict], reply_text: str  # type: ignore[type-arg]
+) -> list[dict]:  # type: ignore[type-arg]
+    """Bundle Flex bubbles and text into a LINE messages array (max 5)."""
+    messages: list[dict] = []  # type: ignore[type-arg]
+    for bubble in flex_bubbles:
+        title = bubble.get("header", {}).get("contents", [{}])[0].get("text", "Info")
+        messages.append({"type": "flex", "altText": title, "contents": bubble})
+    messages.append({"type": "text", "text": reply_text})
+    return messages[:MAX_LINE_MESSAGES]
+
+
 class ProcessLineMessage:
     def __init__(
         self,
@@ -100,7 +112,7 @@ class ProcessLineMessage:
             return
 
         try:
-            tools = build_tools(self._db_connection_string)
+            tools, flex_bubbles = build_tools(self._db_connection_string)
             final_message = None
             for message in run_agent(self._client, self._model, tools, messages):
                 final_message = message
@@ -114,6 +126,7 @@ class ProcessLineMessage:
             )
             reply_text = FALLBACK_MESSAGE
             final_message = None
+            flex_bubbles = []
 
         assistant_msg = ChatMessage(
             id=None,
@@ -127,7 +140,8 @@ class ProcessLineMessage:
         )
         self._repo.save(assistant_msg)
 
-        self._push.send_text(user_msg.line_user_id, reply_text)
+        line_messages = _assemble_line_messages(flex_bubbles, reply_text)
+        self._push.send_messages(user_msg.line_user_id, line_messages)
 
         logger.info(
             "Processed LINE message",
@@ -135,6 +149,7 @@ class ProcessLineMessage:
                 "chat_message_id": chat_message_id,
                 "assistant_message_id": assistant_msg.id,
                 "reply_length": len(reply_text),
+                "flex_count": len(flex_bubbles),
             },
         )
 
