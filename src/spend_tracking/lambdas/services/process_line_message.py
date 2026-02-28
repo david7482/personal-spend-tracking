@@ -1,6 +1,7 @@
 import json
 import logging
 from datetime import UTC, datetime
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from anthropic import Anthropic
@@ -43,15 +44,28 @@ class LinePushSender:
                 "Authorization": f"Bearer {self._token}",
             },
         )
-        with urlopen(request) as response:
-            logger.info(
-                "LINE push sent",
+        try:
+            with urlopen(request) as response:
+                logger.info(
+                    "LINE push sent",
+                    extra={
+                        "line_user_id": line_user_id,
+                        "status": response.status,
+                        "message_count": len(messages),
+                    },
+                )
+        except HTTPError as e:
+            body = e.read().decode("utf-8", errors="replace")
+            logger.error(
+                "LINE push failed",
                 extra={
                     "line_user_id": line_user_id,
-                    "status": response.status,
+                    "status": e.code,
+                    "response_body": body,
                     "message_count": len(messages),
                 },
             )
+            raise
 
 
 def _build_messages(history: list[ChatMessage], current: ChatMessage) -> list[dict]:
