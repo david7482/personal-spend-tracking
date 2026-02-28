@@ -146,7 +146,7 @@ def test_send_messages_posts_multiple_messages(mock_urlopen):
     mock_urlopen.return_value = mock_response
 
     sender = LinePushSender(channel_access_token="test-token")
-    messages = [
+    messages: list[dict] = [
         {"type": "flex", "altText": "Summary", "contents": {"type": "bubble"}},
         {"type": "text", "text": "Hello"},
     ]
@@ -240,7 +240,10 @@ def test_execute_sends_flex_and_text_when_format_response_used():
     import spend_tracking.lambdas.services.process_line_message as plm
 
     original_build_tools = plm.build_tools
-    plm.build_tools = lambda conn: (original_build_tools(conn)[0], [fake_bubble])
+    plm.build_tools = lambda conn: (  # type: ignore[assignment]
+        original_build_tools(conn)[0],
+        [fake_bubble],
+    )
     try:
         service.execute(chat_message_id=42)
     finally:

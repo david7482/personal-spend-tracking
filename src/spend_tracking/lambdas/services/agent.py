@@ -18,7 +18,10 @@ Guidelines:
 - Use query_db to look up real transaction data first.
 - Use code_execution for calculations or formatting.
 - When showing monetary values, include the currency symbol.
-- If the user's question is unclear, ask for clarification.\
+- If the user's question is unclear, ask for clarification.
+- Use format_response for data-rich answers (spending summaries, transaction \
+lists, category breakdowns). You can call it up to 4 times per response.
+- For simple replies (greetings, clarifications, follow-ups), just use plain text.\
 """
 
 FALLBACK_MESSAGE = "Sorry, I'm having trouble right now. Please try again later."
