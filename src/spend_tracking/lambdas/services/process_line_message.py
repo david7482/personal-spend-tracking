@@ -1,6 +1,7 @@
 import json
 import logging
 from datetime import UTC, datetime
+from urllib.request import Request, urlopen
 
 from anthropic import Anthropic
 
@@ -15,23 +16,27 @@ from spend_tracking.lambdas.services.agent import (
 
 logger = logging.getLogger(__name__)
 
+LINE_PUSH_URL = "https://api.line.me/v2/bot/message/push"
+MAX_LINE_MESSAGES = 5
+
 
 class LinePushSender:
-    """Sends text messages via LINE Push API."""
+    """Sends messages via LINE Push API."""
 
     def __init__(self, channel_access_token: str) -> None:
         self._token = channel_access_token
 
     def send_text(self, line_user_id: str, text: str) -> None:
-        from urllib.request import Request, urlopen
+        self.send_messages(line_user_id, [{"type": "text", "text": text}])
 
+    def send_messages(self, line_user_id: str, messages: list[dict]) -> None:  # type: ignore[type-arg]
         payload = {
             "to": line_user_id,
-            "messages": [{"type": "text", "text": text}],
+            "messages": messages[:MAX_LINE_MESSAGES],
         }
         data = json.dumps(payload).encode("utf-8")
         request = Request(
-            "https://api.line.me/v2/bot/message/push",
+            LINE_PUSH_URL,
             data=data,
             headers={
                 "Content-Type": "application/json",
@@ -41,7 +46,11 @@ class LinePushSender:
         with urlopen(request) as response:
             logger.info(
                 "LINE push sent",
-                extra={"line_user_id": line_user_id, "status": response.status},
+                extra={
+                    "line_user_id": line_user_id,
+                    "status": response.status,
+                    "message_count": len(messages),
+                },
             )
 
 
