@@ -1,5 +1,6 @@
+import json
 from datetime import UTC, datetime
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from spend_tracking.domains.models import ChatMessage
 
@@ -127,6 +128,32 @@ def test_query_db_rejects_non_select():
     assert validate_sql("DELETE FROM transactions") is False
     assert validate_sql("INSERT INTO transactions VALUES (1)") is False
     assert validate_sql("UPDATE transactions SET amount = 0") is False
+
+
+@patch("spend_tracking.lambdas.services.process_line_message.urlopen")
+def test_send_messages_posts_multiple_messages(mock_urlopen):
+    from spend_tracking.lambdas.services.process_line_message import LinePushSender
+
+    mock_response = MagicMock()
+    mock_response.status = 200
+    mock_response.__enter__ = MagicMock(return_value=mock_response)
+    mock_response.__exit__ = MagicMock(return_value=False)
+    mock_urlopen.return_value = mock_response
+
+    sender = LinePushSender(channel_access_token="test-token")
+    messages = [
+        {"type": "flex", "altText": "Summary", "contents": {"type": "bubble"}},
+        {"type": "text", "text": "Hello"},
+    ]
+    sender.send_messages("U123", messages)
+
+    mock_urlopen.assert_called_once()
+    request = mock_urlopen.call_args[0][0]
+    body = json.loads(request.data)
+    assert body["to"] == "U123"
+    assert len(body["messages"]) == 2
+    assert body["messages"][0]["type"] == "flex"
+    assert body["messages"][1]["type"] == "text"
 
 
 def test_build_tools_returns_tuple_with_flex_bubbles():
