@@ -77,7 +77,9 @@ class ReceiveLineWebhook:
 
     def _send_loading_animation(self, line_user_id: str) -> None:
         try:
-            data = json.dumps({"chatId": line_user_id}).encode("utf-8")
+            data = json.dumps({"chatId": line_user_id, "loadingSeconds": 60}).encode(
+                "utf-8"
+            )
             request = Request(
                 LINE_LOADING_URL,
                 data=data,
