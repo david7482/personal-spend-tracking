@@ -84,7 +84,10 @@ def test_execute_loads_message_runs_agent_saves_and_pushes():
     saved = mock_repo.save.call_args[0][0]
     assert saved.role == "assistant"
     assert saved.content == "Agent reply"
-    mock_push.send_text.assert_called_once_with("U123", "Agent reply")
+    mock_push.send_messages.assert_called_once()
+    sent_messages = mock_push.send_messages.call_args[0][1]
+    assert len(sent_messages) == 1
+    assert sent_messages[0] == {"type": "text", "text": "Agent reply"}
 
 
 def test_execute_handles_api_error_sends_fallback():
@@ -113,8 +116,10 @@ def test_execute_handles_api_error_sends_fallback():
     )
     service.execute(chat_message_id=42)
 
-    mock_push.send_text.assert_called_once()
-    fallback_text = mock_push.send_text.call_args[0][1]
+    mock_push.send_messages.assert_called_once()
+    sent_messages = mock_push.send_messages.call_args[0][1]
+    assert len(sent_messages) == 1
+    fallback_text = sent_messages[0]["text"]
     assert "try again" in fallback_text.lower() or "trouble" in fallback_text.lower()
 
 
@@ -195,6 +200,102 @@ def test_format_response_tool_populates_flex_bubbles():
     assert len(flex_bubbles) == 1
     assert flex_bubbles[0]["type"] == "bubble"
     assert flex_bubbles[0]["header"]["contents"][0]["text"] == "Test Title"
+
+
+def test_execute_sends_flex_and_text_when_format_response_used():
+    from spend_tracking.lambdas.services.process_line_message import (
+        ProcessLineMessage,
+    )
+
+    mock_repo = MagicMock()
+    mock_repo.get_by_id.return_value = _make_user_message()
+    mock_repo.load_history.return_value = []
+
+    mock_final_message = MagicMock()
+    mock_final_message.content = [MagicMock(type="text", text="Summary text")]
+    mock_final_message.model = "claude-opus-4-6"
+    mock_final_message.stop_reason = "end_turn"
+    mock_final_message.usage = MagicMock(input_tokens=100, output_tokens=50)
+
+    mock_runner = MagicMock()
+    mock_runner.__iter__ = MagicMock(return_value=iter([mock_final_message]))
+
+    mock_client = MagicMock()
+    mock_client.beta.messages.tool_runner.return_value = mock_runner
+
+    mock_push = MagicMock()
+
+    # Pre-populate flex_bubbles to simulate format_response calls
+    fake_bubble = {"type": "bubble", "header": {"contents": [{"text": "Test"}]}}
+
+    service = ProcessLineMessage(
+        client=mock_client,
+        model="claude-opus-4-6",
+        chat_message_repository=mock_repo,
+        line_push_sender=mock_push,
+        db_connection_string="postgresql://fake",
+    )
+
+    # Monkey-patch build_tools to return pre-populated flex_bubbles
+    import spend_tracking.lambdas.services.process_line_message as plm
+
+    original_build_tools = plm.build_tools
+    plm.build_tools = lambda conn: (original_build_tools(conn)[0], [fake_bubble])
+    try:
+        service.execute(chat_message_id=42)
+    finally:
+        plm.build_tools = original_build_tools
+
+    mock_push.send_messages.assert_called_once()
+    messages = mock_push.send_messages.call_args[0][1]
+    assert len(messages) == 2
+    assert messages[0]["type"] == "flex"
+    assert messages[1]["type"] == "text"
+    assert messages[1]["text"] == "Summary text"
+
+    # DB still saves text content
+    saved = mock_repo.save.call_args[0][0]
+    assert saved.content == "Summary text"
+
+
+def test_execute_sends_text_only_when_no_flex():
+    """When agent doesn't use format_response, falls back to text-only."""
+    from spend_tracking.lambdas.services.process_line_message import (
+        ProcessLineMessage,
+    )
+
+    mock_repo = MagicMock()
+    mock_repo.get_by_id.return_value = _make_user_message()
+    mock_repo.load_history.return_value = []
+
+    mock_final_message = MagicMock()
+    mock_final_message.content = [MagicMock(type="text", text="Simple reply")]
+    mock_final_message.model = "claude-opus-4-6"
+    mock_final_message.stop_reason = "end_turn"
+    mock_final_message.usage = MagicMock(input_tokens=100, output_tokens=50)
+
+    mock_runner = MagicMock()
+    mock_runner.__iter__ = MagicMock(return_value=iter([mock_final_message]))
+
+    mock_client = MagicMock()
+    mock_client.beta.messages.tool_runner.return_value = mock_runner
+
+    mock_push = MagicMock()
+
+    service = ProcessLineMessage(
+        client=mock_client,
+        model="claude-opus-4-6",
+        chat_message_repository=mock_repo,
+        line_push_sender=mock_push,
+        db_connection_string="postgresql://fake",
+    )
+    service.execute(chat_message_id=42)
+
+    # Should use send_messages with text only
+    mock_push.send_messages.assert_called_once()
+    messages = mock_push.send_messages.call_args[0][1]
+    assert len(messages) == 1
+    assert messages[0]["type"] == "text"
 
 
 def test_build_messages_from_history():
