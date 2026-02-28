@@ -160,17 +160,13 @@ def _build_chat_body(sections: list[dict[str, Any]]) -> dict[str, Any]:
     contents: list[dict[str, Any]] = []
     for i, section in enumerate(sections):
         if i > 0:
-            contents.append(
-                {"type": "separator", "color": "#E0E0E0", "margin": "lg"}
-            )
+            contents.append({"type": "separator", "color": "#E0E0E0", "margin": "lg"})
         section_type = section.get("type")
         if section_type == "key_value":
             contents.extend(_build_kv_rows(section.get("items", [])))
         elif section_type == "table":
             contents.extend(
-                _build_table_rows(
-                    section.get("headers", []), section.get("rows", [])
-                )
+                _build_table_rows(section.get("headers", []), section.get("rows", []))
             )
     return {
         "type": "box",

@@ -66,7 +66,8 @@ def _build_messages(history: list[ChatMessage], current: ChatMessage) -> list[di
 
 
 def _assemble_line_messages(
-    flex_bubbles: list[dict], reply_text: str  # type: ignore[type-arg]
+    flex_bubbles: list[dict],
+    reply_text: str,  # type: ignore[type-arg]
 ) -> list[dict]:  # type: ignore[type-arg]
     """Bundle Flex bubbles and text into a LINE messages array (max 5)."""
     messages: list[dict] = []  # type: ignore[type-arg]

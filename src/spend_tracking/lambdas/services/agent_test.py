@@ -30,9 +30,11 @@ def test_validate_sql_rejects_mutations():
     assert validate_sql("UPDATE transactions SET amount = 0") is False
 
 
-def test_build_tools_returns_three_tools():
-    tools = build_tools("postgresql://fake")
-    assert len(tools) == 3
+def test_build_tools_returns_four_tools_and_flex_bubbles():
+    tools, flex_bubbles = build_tools("postgresql://fake")
+    assert len(tools) == 4
+    assert isinstance(flex_bubbles, list)
+    assert len(flex_bubbles) == 0
 
 
 def test_get_current_datetime_returns_utc_plus_8():
