@@ -10,6 +10,12 @@ _CURRENCY_SYMBOLS: dict[str, str] = {
 }
 
 
+def _safe_text(value: object) -> str:
+    """Ensure a value is a non-empty string (LINE Flex rejects empty text)."""
+    text = str(value).strip() if value else ""
+    return text or "-"
+
+
 def _format_currency(currency: str, amount: Decimal) -> str:
     symbol = _CURRENCY_SYMBOLS.get(currency, f"{currency}$")
     return f"{symbol}{amount:,.0f}"
@@ -209,14 +215,14 @@ def _build_kv_rows(items: list[dict[str, str]]) -> list[dict[str, Any]]:
                 "contents": [
                     {
                         "type": "text",
-                        "text": item.get("label", ""),
+                        "text": _safe_text(item.get("label", "")),
                         "size": "sm",
                         "color": "#8C8C8C",
                         "flex": 2,
                     },
                     {
                         "type": "text",
-                        "text": item.get("value", ""),
+                        "text": _safe_text(item.get("value", "")),
                         "weight": "bold",
                         "size": "sm",
                         "color": "#2C3E50",
@@ -241,7 +247,7 @@ def _build_table_rows(
             "contents": [
                 {
                     "type": "text",
-                    "text": h,
+                    "text": _safe_text(h),
                     "weight": "bold",
                     "size": "xs",
                     "color": "#8C8C8C",
@@ -261,7 +267,7 @@ def _build_table_rows(
                 "contents": [
                     {
                         "type": "text",
-                        "text": cell,
+                        "text": _safe_text(cell),
                         "size": "sm",
                         "color": "#2C3E50",
                         "flex": 1,
