@@ -25,6 +25,30 @@ def _header(label: str, color: str = CYAN) -> str:
     return f"\n{color}{BOLD}── {label} {'─' * (50 - len(label))}{RESET}"
 
 
+def _trace_tools(tools: list) -> None:
+    """Wrap beta_tool functions to print results for debugging."""
+    for tool in tools:
+        if not hasattr(tool, "func"):
+            continue
+        original = tool.func
+        name = tool.name
+
+        def _make_traced(orig: object, tool_name: str):  # type: ignore[no-untyped-def]
+            def traced(*args: object, **kwargs: object) -> object:
+                result = orig(*args, **kwargs)  # type: ignore[operator]
+                print(_header(f"Result: {tool_name}", YELLOW))
+                try:
+                    parsed = json.loads(result)  # type: ignore[arg-type]
+                    print(f"{DIM}{json.dumps(parsed, indent=2, default=str)}{RESET}")
+                except (json.JSONDecodeError, TypeError):
+                    print(f"{DIM}{result}{RESET}")
+                return result
+
+            return traced
+
+        tool.func = _make_traced(original, name)
+
+
 def _print_message_trace(message: object) -> None:
     """Print detailed trace of a single agent message."""
     for block in message.content:  # type: ignore[attr-defined]
@@ -91,10 +115,11 @@ def main() -> None:
         )
         sys.exit(1)
 
-    model = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")
+    model = os.environ.get("ANTHROPIC_MODEL", "claude-opus-4-6")
 
     client = Anthropic(api_key=api_key)
     tools = build_tools(db_url)
+    _trace_tools(tools)
     messages: list[dict] = []
 
     print(f"{BOLD}Spend Tracking Agent{RESET}")

@@ -1,3 +1,4 @@
+import json
 from unittest.mock import MagicMock
 
 from spend_tracking.lambdas.services.agent import (
@@ -5,6 +6,7 @@ from spend_tracking.lambdas.services.agent import (
     SYSTEM_PROMPT,
     build_tools,
     extract_text,
+    get_current_datetime,
     run_agent,
     validate_sql,
 )
@@ -28,9 +30,17 @@ def test_validate_sql_rejects_mutations():
     assert validate_sql("UPDATE transactions SET amount = 0") is False
 
 
-def test_build_tools_returns_two_tools():
+def test_build_tools_returns_three_tools():
     tools = build_tools("postgresql://fake")
-    assert len(tools) == 2
+    assert len(tools) == 3
+
+
+def test_get_current_datetime_returns_utc_plus_8():
+    result = json.loads(get_current_datetime.func())
+    assert "date" in result
+    assert "datetime" in result
+    assert result["timezone"] == "Asia/Taipei (UTC+8)"
+    assert "+08:00" in result["datetime"]
 
 
 def test_extract_text_returns_text_from_message():
