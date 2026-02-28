@@ -118,7 +118,7 @@ def main() -> None:
     model = os.environ.get("ANTHROPIC_MODEL", "claude-opus-4-6")
 
     client = Anthropic(api_key=api_key)
-    tools = build_tools(db_url)
+    tools, _flex_bubbles = build_tools(db_url)
     _trace_tools(tools)
     messages: list[dict] = []
 
