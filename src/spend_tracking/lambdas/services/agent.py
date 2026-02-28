@@ -109,13 +109,50 @@ def get_current_datetime() -> str:
     )
 
 
-def build_tools(db_connection_string: str) -> list:
-    """Build the agent's tool list."""
+def build_tools(db_connection_string: str) -> tuple[list, list[dict]]:
+    """Build the agent's tool list and flex message accumulator."""
+    from spend_tracking.lambdas.services.flex_message import build_chat_flex_bubble
+
+    flex_bubbles: list[dict] = []
+
+    @beta_tool
+    def format_response(title: str, sections: list[dict]) -> str:  # type: ignore[type-arg]
+        """Format a rich response as a visual card in the chat.
+
+        Use this for data-rich responses like spending summaries, transaction
+        lists, or category breakdowns. Each call creates one visual card.
+        You can call this up to 4 times per response.
+
+        Skip this for simple conversational replies (greetings, clarifications,
+        follow-up questions) — just respond with plain text instead.
+
+        Args:
+            title: Card header text (e.g. "February Spending", "Top Merchants").
+            sections: List of content sections. Each section is a dict with a
+                "type" key and type-specific fields:
+
+                key_value — label/value pairs for summary stats:
+                  {"type": "key_value",
+                   "items": [{"label": "Total", "value": "NT$12,345"}, ...]}
+
+                table — rows with column headers for lists:
+                  {"type": "table",
+                   "headers": ["Merchant", "Amount"],
+                   "rows": [["7-ELEVEN", "NT$89"], ...]}
+
+        Returns:
+            Confirmation string.
+        """
+        bubble = build_chat_flex_bubble(title, sections)
+        flex_bubbles.append(bubble)
+        return f"Formatted: {title}"
+
     return [
         get_current_datetime,
         _make_query_db_tool(db_connection_string),
+        format_response,
         {"type": "code_execution_20260120", "name": "code_execution"},
-    ]
+    ], flex_bubbles
 
 
 def extract_text(message: object) -> str:

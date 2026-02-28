@@ -129,6 +129,47 @@ def test_query_db_rejects_non_select():
     assert validate_sql("UPDATE transactions SET amount = 0") is False
 
 
+def test_build_tools_returns_tuple_with_flex_bubbles():
+    from spend_tracking.lambdas.services.agent import build_tools
+
+    result = build_tools("postgresql://fake")
+    assert isinstance(result, tuple)
+    assert len(result) == 2
+    tools, flex_bubbles = result
+    assert isinstance(tools, list)
+    assert isinstance(flex_bubbles, list)
+    assert len(flex_bubbles) == 0
+
+
+def test_format_response_tool_populates_flex_bubbles():
+    from spend_tracking.lambdas.services.agent import build_tools
+
+    tools, flex_bubbles = build_tools("postgresql://fake")
+    # Find the format_response tool
+    fmt_tool = None
+    for t in tools:
+        if hasattr(t, "name") and t.name == "format_response":
+            fmt_tool = t
+            break
+    assert fmt_tool is not None
+
+    # Call it
+    result = fmt_tool.func(
+        title="Test Title",
+        sections=[
+            {
+                "type": "key_value",
+                "items": [{"label": "Total", "value": "NT$100"}],
+            }
+        ],
+    )
+
+    assert "Test Title" in result
+    assert len(flex_bubbles) == 1
+    assert flex_bubbles[0]["type"] == "bubble"
+    assert flex_bubbles[0]["header"]["contents"][0]["text"] == "Test Title"
+
+
 def test_build_messages_from_history():
     from spend_tracking.lambdas.services.process_line_message import (
         _build_messages,
